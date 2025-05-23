@@ -29,3 +29,10 @@ npm create vite@latest cortexvisu --template vanilla
 cd cortexvisu
 npm install
 npm install three colormap
+
+
+run dev_laucher.py
+puis dans le bash : 
+
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+npm run dev
