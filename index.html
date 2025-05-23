@@ -2,18 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Cortex Viewer</title>
+  <title>CortexVisu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="title">Loading...</div>
-  <select id="colormap-select">
-    <option value="viridis">Viridis</option>
-    <option value="jet">Jet</option>
-    <option value="plasma">Plasma</option>
-    <option value="grayscale">Grayscale</option>
-  </select>
+  <div id="ui">
+    <header>
+      <h1 id="title">Cortex Viewer</h1>
+      <label for="colormap-select">Colormap:</label>
+      <select id="colormap-select">
+        <option value="viridis">Viridis</option>
+        <option value="jet">Jet</option>
+        <option value="plasma">Plasma</option>
+        <option value="grayscale">Grayscale</option>
+      </select>
+    </header>
+
+    <aside id="sidebar">
+      <div class="colorbar">
+        <canvas id="colorbar-canvas" width="20" height="256"></canvas>
+        <div class="colorbar-labels">
+          <span id="label-max">max</span>
+          <span id="label-mid">mid</span>
+          <span id="label-min">min</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

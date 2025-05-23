@@ -19,13 +19,14 @@ export function setupScene(data) {
 
   const controls = new OrbitControls(camera, renderer.domElement);
 
-  // Positionnement initial caméra et contrôles
+  // Calcule la taille du mesh pour placer la caméra
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3));
   geometry.setIndex(data.faces.flat());
   geometry.computeBoundingSphere();
+  const radius = geometry.boundingSphere.radius;
+  scene.userData.radius = radius;
 
-  const { center, radius } = geometry.boundingSphere;
   camera.position.set(0, 0, radius * 2.5);
 
   controls.target.set(0, 0, 0);
@@ -51,6 +52,12 @@ export function setupScene(data) {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
+  // Colorbar dynamique
+  const min = Math.min(...data.scalars);
+  const max = Math.max(...data.scalars);
+  addColorbarToScene(scene, min, max);
+
+
   return { scene, camera, renderer, controls };
 }
 
@@ -75,4 +82,66 @@ export function createMesh(data, cmapName) {
   });
 
   return new THREE.Mesh(geometry, material);
+}
+
+export function addColorbarToScene(scene, min, max) {
+  const geometry = new THREE.PlaneGeometry(0.2, 2);
+
+  const vertexShader = `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const fragmentShader = `
+    varying vec2 vUv;
+    vec3 colormap(float t) {
+      vec3 a = vec3(0.267, 0.005, 0.329);
+      vec3 b = vec3(0.993, 0.906, 0.144);
+      return mix(a, b, t);
+    }
+    void main() {
+      float t = clamp(vUv.y, 0.0, 1.0);
+      gl_FragColor = vec4(colormap(t), 1.0);
+    }
+  `;
+
+  const material = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    side: THREE.DoubleSide
+  });
+
+  const colorbar = new THREE.Mesh(geometry, material);
+  const offsetX = scene.userData.radius * 1.5 || 5;
+  colorbar.position.set(offsetX, 0, 0);
+  colorbar.position.z = 0.01;
+  scene.add(colorbar);
+
+  // Graduation texte (canvas -> sprite)
+  function makeTextSprite(message, yOffset) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.font = '18px sans-serif';
+    ctx.fillText(message, 2, 24);
+    const texture = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.5, 0.125, 1);
+    sprite.position.set(2.3, yOffset, 0);
+    return sprite;
+  }
+
+  const labelMin = makeTextSprite(min.toFixed(2), -1);
+  const labelMid = makeTextSprite(((min + max) / 2).toFixed(2), 0);
+  const labelMax = makeTextSprite(max.toFixed(2), 1);
+
+  scene.add(labelMin);
+  scene.add(labelMid);
+  scene.add(labelMax);
 }
