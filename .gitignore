@@ -176,4 +176,6 @@ cython_debug/
 
 
 # perso
-.data/
+# Ignorer le fichier JSON généré
+/public/data.json
+/data

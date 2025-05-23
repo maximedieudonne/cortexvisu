@@ -12,3 +12,20 @@ show(
     title='Visualisation du cortex gauche'
 )
 
+
+La fonction show() :
+- Charge le mesh .gii avec ta fonction load_mesh() (retourne un trimesh.Trimesh)
+- Charge les scalaires avec read_gii_file() (tableau numpy/TrackedArray)
+- Prépare un dictionnaire JSON pour passer à Three.js :
+    - vertices: liste de [x, y, z]
+    - faces: liste de [i1, i2, i3]
+    - scalars: liste de float
+- Sauvegarde un fichier temporaire .json
+- Lance un serveur local pour ouvrir la visualisation
+
+
+
+npm create vite@latest cortexvisu --template vanilla
+cd cortexvisu
+npm install
+npm install three colormap
