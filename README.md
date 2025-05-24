@@ -2,6 +2,9 @@
 package for 3D cortex visualization with tree.js
 
 
+
+![alt text](https://github.com/maximedieudonne/cortexvisu/blob/master/asset/screen.JPG)
+
 Exemple d'utilisation pour vos projets perso :
 
 from cortexvisu import show
