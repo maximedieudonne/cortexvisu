@@ -4,31 +4,72 @@
   <meta charset="UTF-8" />
   <title>CortexVisu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="ui">
-    <header>
-      <h1 id="title">Cortex Viewer</h1>
-      <label for="colormap-select">Colormap:</label>
-      <select id="colormap-select">
-        <option value="viridis">Viridis</option>
-        <option value="jet">Jet</option>
-        <option value="plasma">Plasma</option>
-        <option value="grayscale">Grayscale</option>
-      </select>
-    </header>
 
-    <aside id="sidebar">
-      <div class="colorbar">
-        <canvas id="colorbar-canvas" width="20" height="256"></canvas>
+  <div id="app">
+    
+    <!-- 🔧 Panneau gauche (contrôles) -->
+    <aside id="left-panel">
+      <h2>Contrôles</h2>
+
+      <section>
+        <label for="mesh-input">Charger un mesh GII:</label>
+        <input type="file" id="mesh-input" accept=".gii" />
+        
+        <label for="texture-input">Charger une texture GII:</label>
+        <input type="file" id="texture-input" accept=".gii" />
+      </section>
+
+      <section>
+        <label><input type="checkbox" id="wireframe" /> Afficher les triangles</label>
+      </section>
+
+      <section>
+        <label for="colormap-select">Colormap:</label>
+        <select id="colormap-select">
+          <option value="viridis">Viridis</option>
+          <option value="jet">Jet</option>
+          <option value="plasma">Plasma</option>
+          <option value="grayscale">Grayscale</option>
+        </select>
+      </section>
+
+      <section>
+        <h3>Échelle</h3>
+        <label for="min-val">Min:</label>
+        <input type="number" id="min-val" step="0.01" />
+
+        <label for="max-val">Max:</label>
+        <input type="number" id="max-val" step="0.01" />
+
+        <button id="apply-range">Appliquer</button>
+      </section>
+    </aside>
+
+    <!-- 🧠 Fenêtre centrale (Three.js) -->
+    <main id="viewer-container">
+      <!-- Le canvas WebGL sera injecté par Three.js ici -->
+    </main>
+
+    <!-- 📊 Panneau droit : Colorbar + Histogramme -->
+    <aside id="right-panel">
+      <section id="colorbar-section">
+        <h3>Colorbar</h3>
+        <canvas id="colorbar-canvas" width="30" height="256"></canvas>
         <div class="colorbar-labels">
           <span id="label-max">max</span>
           <span id="label-mid">mid</span>
           <span id="label-min">min</span>
         </div>
-      </div>
+      </section>
+
+      <section id="histogram-section">
+        <h3>Histogramme</h3>
+        <img id="histogram-image" src="/histogram.png" alt="Histogramme de la texture" />
+      </section>
     </aside>
+
   </div>
 
   <script type="module" src="/src/main.js"></script>

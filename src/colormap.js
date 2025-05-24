@@ -1,4 +1,4 @@
-export function applyColormap(values, cmapName) {
+export function applyColormap(values, cmapName, customMin = null, customMax = null) {
   const colormaps = {
     viridis: [[0.267,0.005,0.329],[0.283,0.141,0.458],[0.254,0.265,0.530],[0.207,0.372,0.553],[0.164,0.471,0.558],[0.128,0.567,0.551],[0.135,0.659,0.518],[0.267,0.749,0.441],[0.478,0.821,0.318],[0.741,0.873,0.150],[0.993,0.906,0.144]],
     jet: [[0,0,0.5],[0,0,1],[0,1,1],[1,1,0],[1,0,0]],
@@ -7,13 +7,13 @@ export function applyColormap(values, cmapName) {
   };
 
   const cmap = colormaps[cmapName] || colormaps.viridis;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const min = customMin !== null ? customMin : Math.min(...values);
+  const max = customMax !== null ? customMax : Math.max(...values);
   const range = max - min || 1;
 
   const colors = new Float32Array(values.length * 3);
   for (let i = 0; i < values.length; i++) {
-    const t = (values[i] - min) / range;
+    const t = Math.max(0, Math.min(1, (values[i] - min) / range)); // clamp
     const idx = Math.floor(t * (cmap.length - 1));
     const next = Math.min(idx + 1, cmap.length - 1);
     const f = t * (cmap.length - 1) - idx;

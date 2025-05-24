@@ -1,63 +1,168 @@
+/* ==== Base globale ==== */
 body {
   margin: 0;
-  overflow: hidden;
   font-family: 'Segoe UI', sans-serif;
+  background-color: #111;
+  color: #f1f1f1;
+  overflow: hidden;
 }
 
-canvas {
+#app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ==== Panneau gauche (contrôles) ==== */
+#left-panel {
+  width: 260px;
+  background-color: #1e1e1e;
+  padding: 20px 15px;
+  overflow-y: auto;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+#left-panel h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #333;
+  padding-bottom: 4px;
+}
+
+#left-panel section {
+  margin-bottom: 24px;
+}
+
+#left-panel label {
   display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
+  margin: 10px 0 4px;
+  font-size: 14px;
+  color: #ccc;
 }
 
-#ui {
+#left-panel input[type="file"],
+#left-panel select,
+#left-panel input[type="number"] {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 8px;
+  background-color: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: border 0.2s;
+}
+
+#left-panel select:hover,
+#left-panel input[type="number"]:hover,
+#left-panel input[type="file"]:hover {
+  border-color: #666;
+}
+
+#left-panel button {
+  width: 100%;
+  padding: 8px 10px;
+  background-color: #3a3a3a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+#left-panel button:hover {
+  background-color: #505050;
+}
+
+#left-panel button:disabled {
+  background-color: #333;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ==== Vue centrale : Viewer WebGL ==== */
+#viewer-container {
+  flex: 1;
+  position: relative;
+  background: black;
+}
+
+/* Canvas WebGL */
+#viewer-container canvas {
   position: absolute;
   width: 100%;
   height: 100%;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  pointer-events: none;
+  display: block;
 }
 
-header {
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-  background: rgba(0,0,0,0.7);
-  color: white;
-  gap: 20px;
-  pointer-events: auto;
-}
-
-#sidebar {
+/* Message de statut */
+#status-message {
   position: absolute;
-  top: 60px;
-  right: 20px;
-  background: rgba(0,0,0,0.7);
-  padding: 10px;
-  border-radius: 8px;
-  pointer-events: auto;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 0, 0, 0.15);
+  padding: 6px 10px;
+  color: #ff7777;
+  font-size: 13px;
+  border-radius: 4px;
+  display: none;
 }
 
-.colorbar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* ==== Panneau droit ==== */
+#right-panel {
+  width: 260px;
+  background-color: #1e1e1e;
+  padding: 20px 15px;
+  overflow-y: auto;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+/* Sections du panneau droit */
+#colorbar-section,
+#histogram-section {
+  margin-bottom: 30px;
+}
+
+#right-panel h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+  color: #ddd;
+}
+
+/* Colorbar */
+#colorbar-canvas {
+  display: block;
+  margin: 0 auto;
+  border: 1px solid #444;
+  border-radius: 4px;
 }
 
 .colorbar-labels {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: white;
+  text-align: center;
+  margin-top: 6px;
   font-size: 12px;
-  margin-top: 8px;
+  color: #ccc;
+  text-shadow: 0 0 5px rgba(255,255,255,0.3);
 }
 
 .colorbar-labels span {
+  display: block;
   margin: 2px 0;
+}
+
+/* Histogramme */
+#histogram-image {
+  display: block;
+  margin: 10px auto 0;
+  width: 100%;
+  border: 1px solid #444;
+  border-radius: 4px;
 }
