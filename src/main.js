@@ -1,6 +1,7 @@
 import { setupScene, createMesh, startRenderingLoop, setWireframe } from './viewer.js';
 import { applyColormap } from './colormap.js';
-import './style.css'; // Assure-toi que ce chemin correspond bien à ton projet
+import Plotly from 'plotly.js-dist-min';
+import './style.css';
 
 let currentMesh = null;
 let data = null;
@@ -21,10 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       scalarMin = Math.min(...data.scalars);
       scalarMax = Math.max(...data.scalars);
-      updateColorbar(scalarMin, scalarMax);
 
       currentMesh = createMesh(data, 'viridis');
       scene.add(currentMesh);
+
+      updateColorbar(scalarMin, scalarMax, 'viridis');
+      drawHistogram(data.scalars, 'viridis', scalarMin, scalarMax);
 
       setupUI();
       startRenderingLoop(scene, camera);
@@ -44,8 +47,6 @@ function updateMeshColors(mesh, scalars, cmap, min = null, max = null) {
   const colorAttr = mesh.geometry.getAttribute('color');
   colorAttr.array.set(newColors);
   colorAttr.needsUpdate = true;
-
-  mesh.geometry.attributes.color.needsUpdate = true;
 }
 
 /**
@@ -56,18 +57,17 @@ function updateColorbar(min, max, cmap = 'viridis') {
   const ctx = canvas.getContext('2d');
   const h = canvas.height;
 
-  // Dessin de la colormap
+  // Dessine la colormap
   for (let y = 0; y < h; y++) {
     const t = y / h;
-    const [r, g, b] = applyColormap([t], cmap,0,1);
+    const [r, g, b] = applyColormap([t], cmap, 0, 1);
     ctx.fillStyle = `rgb(${Math.floor(r * 255)}, ${Math.floor(g * 255)}, ${Math.floor(b * 255)})`;
     ctx.fillRect(0, h - y, canvas.width, 1);
   }
 
-  // Génération des ticks
+  // Génère les ticks
   const ticksContainer = document.getElementById('colorbar-tick-lines');
   ticksContainer.innerHTML = '';
-
   const steps = 10;
   for (let i = 0; i <= steps; i++) {
     const value = max - (i / steps) * (max - min);
@@ -78,9 +78,54 @@ function updateColorbar(min, max, cmap = 'viridis') {
   }
 }
 
+/**
+ * Dessine l'histogramme interactif avec Plotly
+ */
+function drawHistogram(values, colormapName, min = null, max = null) {
+  const nbins = 50;
+  const rangeMin = min ?? Math.min(...values);
+  const rangeMax = max ?? Math.max(...values);
+  const binWidth = (rangeMax - rangeMin) / nbins;
+
+  // Regroupe les scalaires en bins
+  const bins = new Array(nbins).fill(0);
+  values.forEach(v => {
+    const index = Math.floor((v - rangeMin) / binWidth);
+    if (index >= 0 && index < nbins) bins[index]++;
+  });
+
+  const binCenters = bins.map((_, i) => rangeMin + binWidth * (i + 0.5));
+
+  const colorTriplets = applyColormap(binCenters, colormapName, rangeMin, rangeMax);
+  const colors = [];
+  for (let i = 0; i < binCenters.length; i++) {
+    const r = Math.floor(colorTriplets[i * 3] * 255);
+    const g = Math.floor(colorTriplets[i * 3 + 1] * 255);
+    const b = Math.floor(colorTriplets[i * 3 + 2] * 255);
+    colors.push(`rgb(${r},${g},${b})`);
+  }
+
+  const trace = {
+    x: binCenters,
+    y: bins,
+    type: 'bar',
+    marker: { color: colors },
+    hoverinfo: 'x+y',
+  };
+
+  const layout = {
+    margin: { t: 10, r: 10, b: 40, l: 40 },
+    xaxis: { title: 'Valeur scalaire' },
+    yaxis: { title: 'Fréquence' },
+    bargap: 0.05,
+    showlegend: false
+  };
+
+  Plotly.newPlot('histogram-container', [trace], layout, { staticPlot: false });
+}
 
 /**
- * Ajoute tous les écouteurs d'interface utilisateur
+ * Configure les contrôles utilisateur
  */
 function setupUI() {
   const colormapSelect = document.getElementById('colormap-select');
@@ -98,6 +143,7 @@ function setupUI() {
     const cmap = e.target.value;
     updateMeshColors(currentMesh, data.scalars, cmap, scalarMin, scalarMax);
     updateColorbar(scalarMin, scalarMax, cmap);
+    drawHistogram(data.scalars, cmap, scalarMin, scalarMax);
   });
 
   wireframeToggle.addEventListener('change', (e) => {
@@ -112,6 +158,7 @@ function setupUI() {
     if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) {
       updateMeshColors(currentMesh, data.scalars, cmap, minVal, maxVal);
       updateColorbar(minVal, maxVal, cmap);
+      drawHistogram(data.scalars, cmap, minVal, maxVal);
     } else {
       alert("Veuillez entrer un min et un max valides (min < max).");
     }
