@@ -8,6 +8,7 @@ let data = null;
 let scene, camera;
 let scalarMin, scalarMax;
 
+
 document.addEventListener('DOMContentLoaded', () => {
   fetch('/data.json')
     .then(res => res.json())
@@ -81,22 +82,27 @@ function updateColorbar(min, max, cmap = 'viridis') {
 /**
  * Dessine l'histogramme interactif avec Plotly
  */
-function drawHistogram(values, colormapName, min = null, max = null) {
+function drawHistogram(values, colormapName, dynamicMin = scalarMin, dynamicMax = scalarMax) {
   const nbins = 50;
-  const rangeMin = min ?? Math.min(...values);
-  const rangeMax = max ?? Math.max(...values);
-  const binWidth = (rangeMax - rangeMin) / nbins;
+  const binWidth = (scalarMax - scalarMin) / nbins;
 
-  // Regroupe les scalaires en bins
+  // Histogramme toujours de scalarMin à scalarMax
   const bins = new Array(nbins).fill(0);
   values.forEach(v => {
-    const index = Math.floor((v - rangeMin) / binWidth);
+    const index = Math.floor((v - scalarMin) / binWidth);
     if (index >= 0 && index < nbins) bins[index]++;
   });
 
-  const binCenters = bins.map((_, i) => rangeMin + binWidth * (i + 0.5));
+  const binCenters = bins.map((_, i) => scalarMin + binWidth * (i + 0.5));
 
-  const colorTriplets = applyColormap(binCenters, colormapName, rangeMin, rangeMax);
+  // Couleurs basées sur dynamicMin/dynamicMax (les inputs utilisateur)
+  const colorTriplets = applyColormap(binCenters.map(v => {
+    // Clamp entre dynamicMin et dynamicMax
+    if (v <= dynamicMin) return dynamicMin;
+    if (v >= dynamicMax) return dynamicMax;
+    return v;
+  }), colormapName, dynamicMin, dynamicMax);
+
   const colors = [];
   for (let i = 0; i < binCenters.length; i++) {
     const r = Math.floor(colorTriplets[i * 3] * 255);
@@ -115,7 +121,7 @@ function drawHistogram(values, colormapName, min = null, max = null) {
 
   const layout = {
     margin: { t: 10, r: 10, b: 40, l: 40 },
-    xaxis: { title: 'Valeur scalaire' },
+    xaxis: { title: 'Valeur scalaire', range: [scalarMin, scalarMax] },
     yaxis: { title: 'Fréquence' },
     bargap: 0.05,
     showlegend: false
@@ -135,7 +141,7 @@ function setupUI() {
   const applyBtn = document.getElementById('apply-range');
 
   if (!colormapSelect || !wireframeToggle || !minInput || !maxInput || !applyBtn) {
-    console.warn('❗ Certains éléments de l’interface sont manquants.');
+    console.warn(' Certains éléments de l’interface sont manquants.');
     return;
   }
 
@@ -143,7 +149,9 @@ function setupUI() {
     const cmap = e.target.value;
     updateMeshColors(currentMesh, data.scalars, cmap, scalarMin, scalarMax);
     updateColorbar(scalarMin, scalarMax, cmap);
-    drawHistogram(data.scalars, cmap, scalarMin, scalarMax);
+    const minVal = parseFloat(minInput.value);
+    const maxVal = parseFloat(maxInput.value);
+    drawHistogram(data.scalars, cmap, minVal, maxVal);
   });
 
   wireframeToggle.addEventListener('change', (e) => {
