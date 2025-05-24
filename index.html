@@ -9,7 +9,7 @@
 
   <div id="app">
     
-    <!-- 🔧 Panneau gauche (contrôles) -->
+    <!-- Panneau gauche (contrôles) -->
     <aside id="left-panel">
       <h2>Contrôles</h2>
 
@@ -47,21 +47,21 @@
       </section>
     </aside>
 
-    <!-- 🧠 Fenêtre centrale (Three.js) -->
+    <!-- Fenêtre centrale (Three.js) -->
     <main id="viewer-container">
       <!-- Le canvas WebGL sera injecté par Three.js ici -->
     </main>
 
-    <!-- 📊 Panneau droit : Colorbar + Histogramme -->
+    <!-- Panneau droit : Colorbar + Histogramme -->
     <aside id="right-panel">
       <section id="colorbar-section">
         <h3>Colorbar</h3>
-        <canvas id="colorbar-canvas" width="30" height="256"></canvas>
-        <div class="colorbar-labels">
-          <span id="label-max">max</span>
-          <span id="label-mid">mid</span>
-          <span id="label-min">min</span>
-        </div>
+          <div class="colorbar-wrapper">
+            <div class="colorbar-canvas-container">
+              <canvas id="colorbar-canvas" width="20" height="256"></canvas>
+              <div class="colorbar-tick-lines" id="colorbar-tick-lines"></div>
+            </div>
+          </div>
       </section>
 
       <section id="histogram-section">

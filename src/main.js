@@ -41,7 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function updateMeshColors(mesh, scalars, cmap, min = null, max = null) {
   const newColors = applyColormap(scalars, cmap, min, max);
-  mesh.geometry.setAttribute('color', new THREE.BufferAttribute(newColors, 3));
+  const colorAttr = mesh.geometry.getAttribute('color');
+  colorAttr.array.set(newColors);
+  colorAttr.needsUpdate = true;
+
   mesh.geometry.attributes.color.needsUpdate = true;
 }
 
@@ -50,22 +53,31 @@ function updateMeshColors(mesh, scalars, cmap, min = null, max = null) {
  */
 function updateColorbar(min, max, cmap = 'viridis') {
   const canvas = document.getElementById('colorbar-canvas');
-  if (!canvas) return;
-
   const ctx = canvas.getContext('2d');
   const h = canvas.height;
 
+  // Dessin de la colormap
   for (let y = 0; y < h; y++) {
     const t = y / h;
-    const [r, g, b] = applyColormap([t], cmap);
+    const [r, g, b] = applyColormap([t], cmap,0,1);
     ctx.fillStyle = `rgb(${Math.floor(r * 255)}, ${Math.floor(g * 255)}, ${Math.floor(b * 255)})`;
     ctx.fillRect(0, h - y, canvas.width, 1);
   }
 
-  document.getElementById('label-min').textContent = min.toFixed(2);
-  document.getElementById('label-mid').textContent = ((min + max) / 2).toFixed(2);
-  document.getElementById('label-max').textContent = max.toFixed(2);
+  // Génération des ticks
+  const ticksContainer = document.getElementById('colorbar-tick-lines');
+  ticksContainer.innerHTML = '';
+
+  const steps = 10;
+  for (let i = 0; i <= steps; i++) {
+    const value = max - (i / steps) * (max - min);
+    const tick = document.createElement('div');
+    tick.className = 'colorbar-tick';
+    tick.innerHTML = `<span>${value.toFixed(2)}</span>`;
+    ticksContainer.appendChild(tick);
+  }
 }
+
 
 /**
  * Ajoute tous les écouteurs d'interface utilisateur
