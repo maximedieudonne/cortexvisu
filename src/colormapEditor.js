@@ -17,6 +17,7 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
   const nameInput = document.getElementById('colormap-name');
   const rangeList = document.getElementById('custom-ranges-list');
   const colormapSelect = document.getElementById('colormap-select');
+  const backgroundColorInput = document.getElementById('background-color');
 
   openBtn?.addEventListener('click', () => {
     editorModal.classList.remove('hidden');
@@ -26,6 +27,10 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
 
   closeBtn?.addEventListener('click', () => {
     editorModal.classList.add('hidden');
+  });
+
+  backgroundColorInput?.addEventListener('input', () => {
+    renderColormapPreview(scalarMin, scalarMax);
   });
 
   addRangeBtn?.addEventListener('click', () => {
@@ -59,9 +64,25 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
     const name = nameInput.value?.trim() || 'custom';
     if (!name) return;
 
-    // enregistrer les intervalles eux-mêmes, pas interpolés
+    const bgColor = backgroundColorInput.value || '#808080';
     const sorted = customRanges.slice().sort((a, b) => a.min - b.min);
-    const cmapSteps = sorted.map(r => {
+
+    // Créer automatiquement les plages "vides"
+    const fullRanges = [];
+    let current = scalarMin;
+    for (const r of sorted) {
+      if (r.min > current) {
+        fullRanges.push({ min: current, max: r.min, color: bgColor });
+      }
+      fullRanges.push(r);
+      current = Math.max(current, r.max);
+    }
+    if (current < scalarMax) {
+      fullRanges.push({ min: current, max: scalarMax, color: bgColor });
+    }
+
+    // Préparation des steps interpolés pour la visualisation
+    const cmapSteps = fullRanges.map(r => {
       const rgb = hexToRgb01(r.color);
       return {
         min: r.min,
@@ -70,12 +91,12 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
       };
     });
 
-    // définir une fonction personnalisée d'application
     const applyDiscreteColormap = (values) => {
+      const fallback = hexToRgb01(bgColor);
       const colors = new Float32Array(values.length * 3);
       for (let i = 0; i < values.length; i++) {
         const v = values[i];
-        let rgb = [0.5, 0.5, 0.5];
+        let rgb = fallback;
         for (const step of cmapSteps) {
           if (v >= step.min && v <= step.max) {
             rgb = step.rgb;
@@ -87,14 +108,12 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
       return colors;
     };
 
-    // convert to [r,g,b] array for registerColormap
+    // Générer une version lissée pour la colorbar
     const visualizationSteps = [];
     const sampleCount = 100;
-    const min = scalarMin;
-    const max = scalarMax;
     for (let i = 0; i < sampleCount; i++) {
-      const val = min + (i / (sampleCount - 1)) * (max - min);
-      let rgb = [0.5, 0.5, 0.5];
+      const val = scalarMin + (i / (sampleCount - 1)) * (scalarMax - scalarMin);
+      let rgb = hexToRgb01(bgColor);
       for (const step of cmapSteps) {
         if (val >= step.min && val <= step.max) {
           rgb = step.rgb;
@@ -105,18 +124,19 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
     }
 
     registerColormap(name, visualizationSteps, applyDiscreteColormap, 'discrete');
-    localStorage.setItem('customColormap:' + name, JSON.stringify(customRanges));
 
-    // ajout UI
+    // Stocker uniquement les ranges utilisés (avec les trous remplis)
+    localStorage.setItem('customColormap:' + name, JSON.stringify(fullRanges));
+
     if (!Array.from(colormapSelect.options).some(opt => opt.value === name)) {
       const opt = document.createElement('option');
       opt.value = name;
       opt.textContent = name;
       colormapSelect.appendChild(opt);
     }
+
     colormapSelect.value = name;
     colormapSelect.dispatchEvent(new Event('change'));
-
     editorModal.classList.add('hidden');
   });
 
@@ -154,7 +174,9 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
 
   function renderColormapPreview(min, max) {
     const canvas = document.getElementById('custom-colormap-preview');
-    if (!canvas) return;
+    const labelContainer = document.getElementById('colormap-labels');
+    if (!canvas || !labelContainer) return;
+
     const ctx = canvas.getContext('2d');
     const w = canvas.width;
     const h = canvas.height;
@@ -166,13 +188,41 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
       ctx.fillStyle = hex;
       ctx.fillRect(x, 0, 1, h);
     }
+
+    labelContainer.innerHTML = '';
+
+    const minLabel = document.createElement('span');
+    minLabel.textContent = min.toFixed(2);
+    minLabel.style.left = '0%';
+    labelContainer.appendChild(minLabel);
+
+    const maxLabel = document.createElement('span');
+    maxLabel.textContent = max.toFixed(2);
+    maxLabel.style.left = '100%';
+    labelContainer.appendChild(maxLabel);
+
+    for (const r of customRanges) {
+      const startPct = ((r.min - min) / (max - min)) * 100;
+      const endPct = ((r.max - min) / (max - min)) * 100;
+
+      const minRLabel = document.createElement('span');
+      minRLabel.textContent = r.min.toFixed(2);
+      minRLabel.style.left = `${startPct}%`;
+      labelContainer.appendChild(minRLabel);
+
+      const maxRLabel = document.createElement('span');
+      maxRLabel.textContent = r.max.toFixed(2);
+      maxRLabel.style.left = `${endPct}%`;
+      labelContainer.appendChild(maxRLabel);
+    }
   }
 
   function getColorFromCustomMap(val) {
     for (const r of customRanges) {
       if (val >= r.min && val <= r.max) return r.color;
     }
-    return '#808080';
+    const bg = document.getElementById('background-color')?.value || '#808080';
+    return bg;
   }
 }
 
