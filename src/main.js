@@ -162,20 +162,25 @@ function drawHistogram(values, cmapName, dynamicMin = scalarMin, dynamicMax = sc
 function drawHistogramDiscrete(values, cmapName) {
   const stored = localStorage.getItem('customColormap:' + cmapName);
   if (!stored) return;
+
   const ranges = JSON.parse(stored);
-  const bins = new Array(ranges.length).fill(0);
+  const bgColor = getBackgroundColorFromCanvas(ranges); // utilitaire ci-dessous
+  const bins = new Array(ranges.length + 1).fill(0); // +1 pour le background
 
   for (const v of values) {
+    let found = false;
     for (let i = 0; i < ranges.length; i++) {
       if (v >= ranges[i].min && v <= ranges[i].max) {
         bins[i]++;
+        found = true;
         break;
       }
     }
+    if (!found) bins[ranges.length]++; // background bin
   }
 
-  const xLabels = ranges.map(r => `${r.min.toFixed(1)}–${r.max.toFixed(1)}`);
-  const colors = ranges.map(r => r.color);
+  const xLabels = [...ranges.map(r => `${r.min.toFixed(1)}–${r.max.toFixed(1)}`), 'fond'];
+  const colors = [...ranges.map(r => r.color), bgColor];
 
   Plotly.newPlot('histogram-container', [{
     x: xLabels,
@@ -191,6 +196,16 @@ function drawHistogramDiscrete(values, cmapName) {
     showlegend: false
   }, { staticPlot: false });
 }
+
+// 🔧 Utilitaire pour récupérer la couleur de fond appliquée dans le modal
+function getBackgroundColorFromCanvas(ranges) {
+  const usedColor = document.getElementById('background-color')?.value;
+  if (usedColor) return usedColor;
+
+  // fallback : couleur majoritaire dans les trous ?
+  return '#808080';
+}
+
 
 function setupUI() {
   const colormapSelect = document.getElementById('colormap-select');
