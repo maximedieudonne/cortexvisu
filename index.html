@@ -22,7 +22,12 @@
       </section>
 
       <section>
-        <label><input type="checkbox" id="wireframe" /> Afficher les triangles</label>
+        <label><input type="checkbox" id="wireframe" /> wireframe</label>
+        <label><input type="checkbox" id="edges-toggle" /> Afficher les arêtes</label>
+        <label for="edge-color">Couleur des arêtes :</label>
+        <input type="color" id="edge-color" value="#ffffff" />
+        <label for="edge-width">Épaisseur :</label>
+        <input type="range" id="edge-width" min="1" max="10" step="1" value="1" />
       </section>
 
       <section>

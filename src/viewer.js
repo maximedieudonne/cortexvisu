@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { applyColormap } from './colormap.js';
 
 let renderer, scene, camera, controls;
+let edgeLines = null;
+let edgeMaterial = null;
 
 /**
  * Initialise la scène, caméra, lumières, contrôles et renderer
@@ -105,6 +107,29 @@ export function setWireframe(mesh, enabled) {
   if (mesh && mesh.material) {
     mesh.material.wireframe = enabled;
     mesh.material.needsUpdate = true;
+  }
+}
+
+
+export function toggleEdges(mesh, scene, enabled, options = {}) {
+  if (enabled) {
+    if (!edgeLines) {
+      const edges = new THREE.EdgesGeometry(mesh.geometry);
+      edgeMaterial = new THREE.LineBasicMaterial({
+        color: options.color || 0xffffff,
+        linewidth: options.linewidth || 1
+      });
+      edgeLines = new THREE.LineSegments(edges, edgeMaterial);
+      mesh.add(edgeLines);
+    }
+
+    // mise à jour dynamique
+    if (options.color) edgeMaterial.color.set(options.color);
+    if (options.linewidth !== undefined) edgeMaterial.linewidth = options.linewidth;
+
+    edgeLines.visible = true;
+  } else if (edgeLines) {
+    edgeLines.visible = false;
   }
 }
 
