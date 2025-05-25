@@ -1,5 +1,6 @@
 import { setupScene, createMesh, startRenderingLoop, setWireframe, toggleEdges } from './viewer.js';
-import { applyColormap } from './colormap.js';
+import { applyColormap, getColormapType } from './colormap.js';
+import { initColormapEditor } from './colormapEditor.js';
 import Plotly from 'plotly.js-dist-min';
 import './style.css';
 
@@ -7,6 +8,7 @@ let currentMesh = null;
 let data = null;
 let scene, camera;
 let scalarMin, scalarMax;
+let currentColormap = 'viridis';
 
 document.addEventListener('DOMContentLoaded', () => {
   fetch('/data.json')
@@ -23,13 +25,23 @@ document.addEventListener('DOMContentLoaded', () => {
       scalarMin = Math.min(...data.scalars);
       scalarMax = Math.max(...data.scalars);
 
-      currentMesh = createMesh(data, 'viridis');
+      currentMesh = createMesh(data, currentColormap, scalarMin, scalarMax);
       scene.add(currentMesh);
 
-      updateColorbar(scalarMin, scalarMax, 'viridis');
-      drawHistogram(data.scalars, 'viridis', scalarMin, scalarMax);
+      updateColorbar(scalarMin, scalarMax, currentColormap);
+      drawHistogram(data.scalars, currentColormap, scalarMin, scalarMax);
 
       setupUI();
+      initColormapEditor(data, scalarMin, scalarMax, (colors) => {
+        const attr = currentMesh.geometry.getAttribute('color');
+        if (attr) {
+          attr.array.set(colors);
+          attr.needsUpdate = true;
+        } else {
+          currentMesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        }
+      });
+
       startRenderingLoop(scene, camera);
     })
     .catch(err => {
@@ -42,11 +54,18 @@ document.addEventListener('DOMContentLoaded', () => {
 function updateMeshColors(mesh, scalars, cmap, min = null, max = null) {
   const newColors = applyColormap(scalars, cmap, min, max);
   const colorAttr = mesh.geometry.getAttribute('color');
-  colorAttr.array.set(newColors);
-  colorAttr.needsUpdate = true;
+  if (colorAttr) {
+    colorAttr.array.set(newColors);
+    colorAttr.needsUpdate = true;
+  } else {
+    mesh.geometry.setAttribute('color', new THREE.BufferAttribute(newColors, 3));
+  }
 }
 
 function updateColorbar(min, max, cmap = 'viridis') {
+  const type = getColormapType(cmap);
+  if (type === 'discrete') return updateColorbarDiscrete(cmap);
+
   const canvas = document.getElementById('colorbar-canvas');
   const ctx = canvas.getContext('2d');
   const h = canvas.height;
@@ -70,7 +89,37 @@ function updateColorbar(min, max, cmap = 'viridis') {
   }
 }
 
-function drawHistogram(values, colormapName, dynamicMin = scalarMin, dynamicMax = scalarMax) {
+function updateColorbarDiscrete(cmapName) {
+  const canvas = document.getElementById('colorbar-canvas');
+  const ctx = canvas.getContext('2d');
+  const h = canvas.height;
+
+  const stored = localStorage.getItem('customColormap:' + cmapName);
+  if (!stored) return;
+  const ranges = JSON.parse(stored);
+  const n = ranges.length;
+
+  for (let i = 0; i < n; i++) {
+    const yStart = Math.floor(i * h / n);
+    const yEnd = Math.floor((i + 1) * h / n);
+    ctx.fillStyle = ranges[i].color;
+    ctx.fillRect(0, h - yEnd, canvas.width, yEnd - yStart);
+  }
+
+  const ticksContainer = document.getElementById('colorbar-tick-lines');
+  ticksContainer.innerHTML = '';
+  for (const r of ranges) {
+    const tick = document.createElement('div');
+    tick.className = 'colorbar-tick';
+    tick.innerHTML = `<span>${r.min.toFixed(2)} - ${r.max.toFixed(2)}</span>`;
+    ticksContainer.appendChild(tick);
+  }
+}
+
+function drawHistogram(values, cmapName, dynamicMin = scalarMin, dynamicMax = scalarMax) {
+  const type = getColormapType(cmapName);
+  if (type === 'discrete') return drawHistogramDiscrete(values, cmapName);
+
   const nbins = 50;
   const binWidth = (scalarMax - scalarMin) / nbins;
   const bins = new Array(nbins).fill(0);
@@ -80,10 +129,9 @@ function drawHistogram(values, colormapName, dynamicMin = scalarMin, dynamicMax 
   });
 
   const binCenters = bins.map((_, i) => scalarMin + binWidth * (i + 0.5));
-
   const colorTriplets = applyColormap(
     binCenters.map(v => Math.min(Math.max(v, dynamicMin), dynamicMax)),
-    colormapName,
+    cmapName,
     dynamicMin,
     dynamicMax
   );
@@ -96,23 +144,52 @@ function drawHistogram(values, colormapName, dynamicMin = scalarMin, dynamicMax 
     colors.push(`rgb(${r},${g},${b})`);
   }
 
-  const trace = {
+  Plotly.newPlot('histogram-container', [{
     x: binCenters,
     y: bins,
     type: 'bar',
     marker: { color: colors },
-    hoverinfo: 'x+y',
-  };
-
-  const layout = {
+    hoverinfo: 'x+y'
+  }], {
     margin: { t: 10, r: 10, b: 40, l: 40 },
     xaxis: { title: 'Valeur scalaire', range: [scalarMin, scalarMax] },
     yaxis: { title: 'Fréquence' },
     bargap: 0.05,
     showlegend: false
-  };
+  }, { staticPlot: false });
+}
 
-  Plotly.newPlot('histogram-container', [trace], layout, { staticPlot: false });
+function drawHistogramDiscrete(values, cmapName) {
+  const stored = localStorage.getItem('customColormap:' + cmapName);
+  if (!stored) return;
+  const ranges = JSON.parse(stored);
+  const bins = new Array(ranges.length).fill(0);
+
+  for (const v of values) {
+    for (let i = 0; i < ranges.length; i++) {
+      if (v >= ranges[i].min && v <= ranges[i].max) {
+        bins[i]++;
+        break;
+      }
+    }
+  }
+
+  const xLabels = ranges.map(r => `${r.min.toFixed(1)}–${r.max.toFixed(1)}`);
+  const colors = ranges.map(r => r.color);
+
+  Plotly.newPlot('histogram-container', [{
+    x: xLabels,
+    y: bins,
+    type: 'bar',
+    marker: { color: colors },
+    hoverinfo: 'x+y'
+  }], {
+    margin: { t: 10, r: 10, b: 40, l: 40 },
+    xaxis: { title: 'Tranche scalaire' },
+    yaxis: { title: 'Fréquence' },
+    bargap: 0.05,
+    showlegend: false
+  }, { staticPlot: false });
 }
 
 function setupUI() {
@@ -130,12 +207,10 @@ function setupUI() {
     return;
   }
 
-  const getColorMapRange = () => {
-    return {
-      min: parseFloat(minInput.value),
-      max: parseFloat(maxInput.value)
-    };
-  };
+  const getColorMapRange = () => ({
+    min: parseFloat(minInput.value),
+    max: parseFloat(maxInput.value)
+  });
 
   const updateEdges = () => {
     const color = edgeColorInput.value;
@@ -144,8 +219,10 @@ function setupUI() {
     toggleEdges(currentMesh, scene, show, { color, linewidth });
   };
 
-  colormapSelect.addEventListener('change', (e) => {
-    const cmap = e.target.value;
+  colormapSelect.addEventListener('change', () => {
+    const cmap = colormapSelect.value;
+    currentColormap = cmap;
+
     const { min, max } = getColorMapRange();
     updateMeshColors(currentMesh, data.scalars, cmap, min, max);
     updateColorbar(min, max, cmap);

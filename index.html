@@ -38,6 +38,7 @@
           <option value="plasma">Plasma</option>
           <option value="grayscale">Grayscale</option>
         </select>
+        <button id="open-colormap-editor">Personnaliser la colormap</button>
       </section>
 
       <section>
@@ -75,6 +76,33 @@
       </section>
     </aside>
 
+  </div>
+
+  <!-- Modale -->
+  <div id="colormap-editor-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Éditeur de Colormap</h2>
+
+      <canvas id="custom-colormap-preview" width="256" height="20"></canvas>
+
+      <div id="custom-ranges-list"></div>
+      <label>Nom de la colormap <input type="text" id="colormap-name" /></label>
+
+      <div class="range-editor">
+        <label>Min <input type="number" id="range-min" /></label>
+        <label>Max <input type="number" id="range-max" /></label>
+        <label>Couleur <input type="color" id="range-color" /></label>
+      </div>
+
+      <button id="add-range-btn">Ajouter un range</button>
+
+      <div class="modal-actions">
+        <button id="add-to-list">Ajouter à la liste</button>
+        <button id="save-colormap">Sauvegarder</button>
+        <button id="load-colormap">Importer</button>
+        <button id="close-editor">Fermer</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="/src/main.js"></script>

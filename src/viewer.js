@@ -84,9 +84,9 @@ export function buildGeometry(data) {
 /**
  * Crée un mesh coloré par scalaires et colormap
  */
-export function createMesh(data, cmapName) {
+export function createMesh(data, cmapName, min = null, max = null) {
   const geometry = buildGeometry(data);
-  const colors = applyColormap(data.scalars, cmapName);
+  const colors = applyColormap(data.scalars, cmapName, min, max);
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
   const material = new THREE.MeshStandardMaterial({
