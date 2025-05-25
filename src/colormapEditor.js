@@ -46,19 +46,52 @@ export function initColormapEditor(data, scalarMin, scalarMax, applyCallback) {
   });
 
   saveBtn?.addEventListener('click', () => {
-    const name = nameInput.value || 'custom';
-    localStorage.setItem('customColormap:' + name, JSON.stringify(customRanges));
-  });
+  const fileName = (nameInput.value || 'colormap') + '.json';
+  const blob = new Blob([JSON.stringify(customRanges, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+
+  // Cleanup
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+});
+
 
   loadBtn?.addEventListener('click', () => {
-    const name = nameInput.value || 'custom';
-    const saved = localStorage.getItem('customColormap:' + name);
-    if (saved) {
-      customRanges = JSON.parse(saved);
-      renderRangeList();
-      renderColormapPreview(scalarMin, scalarMax);
-    }
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json';
+
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target.result);
+        if (Array.isArray(json)) {
+          customRanges = json;
+          renderRangeList();
+          renderColormapPreview(scalarMin, scalarMax);
+        } else {
+          alert('Le fichier ne contient pas un tableau valide de ranges.');
+        }
+      } catch (err) {
+        alert('Erreur de lecture JSON : ' + err.message);
+      }
+    };
+    reader.readAsText(file);
   });
+
+  input.click();
+});
+
 
   addToListBtn?.addEventListener('click', () => {
     const name = nameInput.value?.trim() || 'custom';

@@ -197,7 +197,7 @@ function drawHistogramDiscrete(values, cmapName) {
   }, { staticPlot: false });
 }
 
-// 🔧 Utilitaire pour récupérer la couleur de fond appliquée dans le modal
+//  Utilitaire pour récupérer la couleur de fond appliquée dans le modal
 function getBackgroundColorFromCanvas(ranges) {
   const usedColor = document.getElementById('background-color')?.value;
   if (usedColor) return usedColor;
