@@ -224,6 +224,35 @@ body {
   background-color: #aaa;
 }
 
+.colorbar-discrete-tick-lines {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  height: 100%;
+  width: 60px;
+  pointer-events: none;
+}
+
+.colorbar-discrete-tick-lines .colorbar-tick {
+  position: absolute;
+  font-size: 11px;
+  color: #ccc;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.colorbar-discrete-tick-lines .colorbar-tick::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 1px;
+  background-color: #aaa;
+}
+
+
 
 /* Histogramme */
 #histogram-image {

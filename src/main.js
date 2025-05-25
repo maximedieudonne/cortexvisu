@@ -63,6 +63,9 @@ function updateMeshColors(mesh, scalars, cmap, min = null, max = null) {
 }
 
 function updateColorbar(min, max, cmap = 'viridis') {
+  // Affiche les ticks continus et cache ceux des discrets
+  document.getElementById('colorbar-discrete-tick-lines').style.display = 'none';
+  document.getElementById('colorbar-tick-lines').style.display = 'flex';
   const type = getColormapType(cmap);
   if (type === 'discrete') return updateColorbarDiscrete(cmap);
 
@@ -93,28 +96,40 @@ function updateColorbarDiscrete(cmapName) {
   const canvas = document.getElementById('colorbar-canvas');
   const ctx = canvas.getContext('2d');
   const h = canvas.height;
+  const ranges = JSON.parse(localStorage.getItem('customColormap:' + cmapName));
+  if (!ranges) return;
 
-  const stored = localStorage.getItem('customColormap:' + cmapName);
-  if (!stored) return;
-  const ranges = JSON.parse(stored);
-  const n = ranges.length;
-
-  for (let i = 0; i < n; i++) {
-    const yStart = Math.floor(i * h / n);
-    const yEnd = Math.floor((i + 1) * h / n);
-    ctx.fillStyle = ranges[i].color;
-    ctx.fillRect(0, h - yEnd, canvas.width, yEnd - yStart);
+  // Colorier les bandes
+  for (const r of ranges) {
+    const yStart = h * (1 - (r.max - scalarMin) / (scalarMax - scalarMin));
+    const yEnd = h * (1 - (r.min - scalarMin) / (scalarMax - scalarMin));
+    ctx.fillStyle = r.color;
+    ctx.fillRect(0, yStart, canvas.width, yEnd - yStart);
   }
 
-  const ticksContainer = document.getElementById('colorbar-tick-lines');
-  ticksContainer.innerHTML = '';
+  // Gérer les ticks
+  const tickCont = document.getElementById('colorbar-tick-lines');
+  const tickDiscrete = document.getElementById('colorbar-discrete-tick-lines');
+  tickCont.style.display = 'none';
+  tickDiscrete.innerHTML = '';
+  tickDiscrete.style.display = 'block';
+
+  const added = new Set(); // éviter les doublons
   for (const r of ranges) {
-    const tick = document.createElement('div');
-    tick.className = 'colorbar-tick';
-    tick.innerHTML = `<span>${r.min.toFixed(2)} - ${r.max.toFixed(2)}</span>`;
-    ticksContainer.appendChild(tick);
+    [r.min, r.max].forEach(v => {
+      const y = h * (1 - (v - scalarMin) / (scalarMax - scalarMin));
+      if (!added.has(v)) {
+        const tick = document.createElement('div');
+        tick.className = 'colorbar-tick';
+        tick.style.top = `${y}px`;
+        tick.innerHTML = `<span>${v.toFixed(2)}</span>`;
+        tickDiscrete.appendChild(tick);
+        added.add(v);
+      }
+    });
   }
 }
+
 
 function drawHistogram(values, cmapName, dynamicMin = scalarMin, dynamicMax = scalarMax) {
   const type = getColormapType(cmapName);
