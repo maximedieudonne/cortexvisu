@@ -477,3 +477,38 @@ body {
 .modal-actions button:hover {
   background-color: #555;
 }
+
+
+.accordion {
+  margin-bottom: 12px;
+}
+
+.accordion-header {
+  width: 100%;
+  text-align: left;
+  background: #2a2a2a;
+  color: white;
+  padding: 8px 10px;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.accordion-header:hover {
+  background: #444;
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease-out;
+  padding-left: 4px;
+  margin-top: 4px;
+}
+
+.accordion.open .accordion-content {
+  max-height: 500px; /* ou plus selon le contenu */
+}

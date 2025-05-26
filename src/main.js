@@ -303,10 +303,18 @@ function setupUI() {
         material.vertexColors = true;
       } else {
         material.vertexColors = false;
-        material.color.set(0xcccccc); // couleur grise par défaut
+        material.color.set(0xcccccc); 
       }
 
       material.needsUpdate = true;
     });
   }
 }
+
+
+document.querySelectorAll('.accordion-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const acc = header.parentElement;
+    acc.classList.toggle('open');
+  });
+});

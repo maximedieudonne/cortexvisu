@@ -10,53 +10,64 @@
   <div id="app">
     
     <!-- Panneau gauche (contrôles) -->
-    <aside id="left-panel">
-      <h2>Contrôles</h2>
+      <aside id="left-panel">
+  <h2>Contrôles</h2>
 
-      <section>
-        <label for="mesh-input">Charger un mesh GII:</label>
-        <input type="file" id="mesh-input" accept=".gii" />
-        
-        <label for="texture-input">Charger une texture GII:</label>
-        <input type="file" id="texture-input" accept=".gii" />
-      </section>
+  <div class="accordion">
+    <button class="accordion-header">Chargement</button>
+    <div class="accordion-content">
+      <label for="mesh-input">Charger un mesh GII:</label>
+      <input type="file" id="mesh-input" accept=".gii" />
+
+      <label for="texture-input">Charger une texture GII:</label>
+      <input type="file" id="texture-input" accept=".gii" />
+
       <label><input type="checkbox" id="toggle-texture" checked />Afficher la texture</label>
-      <section>
-        <label for="bg-color-picker">Couleur du fond :</label>
-        <input type="color" id="bg-color-picker" value="#111111" />
-      </section>
-      <section>
+    </div>
+  </div>
 
-        <label><input type="checkbox" id="wireframe" /> wireframe</label>
-        <label><input type="checkbox" id="edges-toggle" /> Afficher les arêtes</label>
-        <label for="edge-color">Couleur des arêtes :</label>
-        <input type="color" id="edge-color" value="#ffffff" />
-        <label for="edge-width">Épaisseur :</label>
-        <input type="range" id="edge-width" min="1" max="10" step="1" value="1" />
-      </section>
+  <div class="accordion">
+    <button class="accordion-header">Affichage</button>
+    <div class="accordion-content">
+      <label for="bg-color-picker">Couleur du fond :</label>
+      <input type="color" id="bg-color-picker" value="#111111" />
 
-      <section>
-        <label for="colormap-select">Colormap:</label>
-        <select id="colormap-select">
-          <option value="viridis">Viridis</option>
-          <option value="jet">Jet</option>
-          <option value="plasma">Plasma</option>
-          <option value="grayscale">Grayscale</option>
-        </select>
-        <button id="open-colormap-editor">Personnaliser la colormap</button>
-      </section>
+      <label><input type="checkbox" id="wireframe" /> Wireframe</label>
+      <label><input type="checkbox" id="edges-toggle" /> Afficher les arêtes</label>
 
-      <section>
-        <h3>Échelle</h3>
-        <label for="min-val">Min:</label>
-        <input type="number" id="min-val" step="0.01" />
+      <label for="edge-color">Couleur des arêtes :</label>
+      <input type="color" id="edge-color" value="#ffffff" />
+      <label for="edge-width">Épaisseur :</label>
+      <input type="range" id="edge-width" min="1" max="10" step="1" value="1" />
+    </div>
+  </div>
 
-        <label for="max-val">Max:</label>
-        <input type="number" id="max-val" step="0.01" />
+  <div class="accordion">
+    <button class="accordion-header">Colormap</button>
+    <div class="accordion-content">
+      <label for="colormap-select">Colormap :</label>
+      <select id="colormap-select">
+        <option value="viridis">Viridis</option>
+        <option value="jet">Jet</option>
+        <option value="plasma">Plasma</option>
+        <option value="grayscale">Grayscale</option>
+      </select>
+      <button id="open-colormap-editor">Personnaliser la colormap</button>
+    </div>
+  </div>
 
-        <button id="apply-range">Appliquer</button>
-      </section>
-    </aside>
+  <div class="accordion">
+    <button class="accordion-header">Échelle</button>
+    <div class="accordion-content">
+      <label for="min-val">Min :</label>
+      <input type="number" id="min-val" step="0.01" />
+      <label for="max-val">Max :</label>
+      <input type="number" id="max-val" step="0.01" />
+      <button id="apply-range">Appliquer</button>
+    </div>
+  </div>
+</aside>
+
 
     <!-- Fenêtre centrale (Three.js) -->
     <main id="viewer-container">
