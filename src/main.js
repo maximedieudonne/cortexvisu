@@ -1,6 +1,7 @@
 import { setupScene, createMesh, startRenderingLoop, setWireframe, toggleEdges } from './viewer.js';
 import { applyColormap, getColormapType } from './colormap.js';
 import { initColormapEditor } from './colormapEditor.js';
+import { initDrawTool } from './draw.js';
 import Plotly from 'plotly.js-dist-min';
 import './style.css';
 
@@ -49,6 +50,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           currentMesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
         }
+      });
+
+      
+      initDrawTool({
+        mesh: currentMesh,
+        container: document.getElementById('viewer-container'),
+        camera,
+        scene,
+        renderer: setup.renderer
       });
 
       startRenderingLoop(scene, camera);

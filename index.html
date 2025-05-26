@@ -66,7 +66,28 @@
       <button id="apply-range">Appliquer</button>
     </div>
   </div>
+
+  <section class="accordion">
+  <button class="accordion-header"> Dessiner sur le maillage</button>
+  <div class="accordion-content">
+    <button id="create-draw-texture-btn">Nouvelle texture</button>
+    
+    <label for="manual-texture-select">Texture manuelle :</label>
+    <select id="manual-texture-select"></select>
+
+    <div id="draw-tools" style="display: none;">
+      <label for="brush-color">Couleur :</label>
+      <input type="color" id="brush-color" value="#ff0000" />
+
+      <label for="brush-size">Taille :</label>
+      <input type="range" id="brush-size" min="1" max="50" value="5" />
+    </div>
+  </div>
+</section>
 </aside>
+
+
+
 
 
     <!-- Fenêtre centrale (Three.js) -->
@@ -141,6 +162,37 @@
 
     </div>
   </div>
+
+  <!-- Fenêtre modale pour nommer la texture -->
+<div id="draw-modal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Nouvelle texture manuelle</h3>
+    <label>Nom :
+      <input type="text" id="draw-texture-name" />
+    </label>
+    <div class="modal-actions">
+      <button id="confirm-draw-texture">Ajouter</button>
+      <button id="cancel-draw-texture">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div id="draw-status-message" style="
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 14px;
+  z-index: 1000;
+  display: none;
+">
+  Mode dessin activé
+</div>
 
   <script type="module" src="/src/main.js"></script>
 </body>
