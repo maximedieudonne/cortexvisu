@@ -1,12 +1,13 @@
-# tools/api.py
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from tools.parser import load_mesh, load_scalar_data
+from pathlib import Path
 
 app = FastAPI()
 
-# Autoriser le frontend Vite
+# (Optionnel : à retirer si tu ne bosses plus avec vite dev)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -35,3 +36,6 @@ async def upload_texture(file: UploadFile = File(...)):
     
     scalars = load_scalar_data("temp_texture.gii")
     return JSONResponse({"scalars": scalars})
+
+# Sert les fichiers Vite buildés
+app.mount("/", StaticFiles(directory=Path("dist"), html=True), name="static")

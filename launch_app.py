@@ -2,29 +2,28 @@
 import subprocess
 import webbrowser
 import time
-import os
+import sys
+print("Compilation du frontend...")
+vite_build = subprocess.run("npm run build", shell=True)
+if vite_build.returncode != 0:
+    print("Échec du build Vite. Vérifie ton frontend.")
+    exit(1)
 
-# 1. Lancer le backend FastAPI
-print("Démarrage du backend (FastAPI)...")
-api_proc = subprocess.Popen(["uvicorn", "tools.api:app", "--port", "8000", "--reload"])
+print("Lancement du backend (FastAPI, sert aussi le frontend)...")
 
-# 2. Lancer le serveur frontend (Vite)
-print("Démarrage du frontend (Vite)...")
-vite_proc = subprocess.Popen(["npm", "run", "dev"])
+server = subprocess.Popen(f'"{sys.executable}" -m uvicorn tools.api:app --port 8000', shell=True)
 
-# 3. Attendre un peu le temps que les serveurs démarrent
-time.sleep(3)
 
-# 4. Ouvrir automatiquement le navigateur
-print("Ouverture du navigateur...")
-webbrowser.open("http://localhost:5173")
 
-# 5. Attendre que l'utilisateur quitte
+# Laisser le temps au serveur de démarrer
+time.sleep(2)
+
+# Ouvrir automatiquement dans le navigateur
+webbrowser.open("http://localhost:8000")
+
 try:
-    print("App en cours d'exécution. Appuyez sur Ctrl+C pour quitter.")
-    api_proc.wait()
-    vite_proc.wait()
+    print("CortexVisu en cours d'exécution. Ctrl+C pour arrêter.")
+    server.wait()
 except KeyboardInterrupt:
-    print("\nArrêt en cours...")
-    api_proc.terminate()
-    vite_proc.terminate()
+    print("Arrêt de l'application.")
+    server.terminate()

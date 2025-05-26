@@ -46,13 +46,14 @@ function initRenderer(container) {
 
 function initControls(cam, domElement) {
   const ctrl = new TrackballControls(cam, domElement);
-  ctrl.rotateSpeed = 3.0;         // optionnel : un peu moins vif
-  ctrl.zoomSpeed = 1.0;           // optionnel : plus doux
-  ctrl.panSpeed = 0.4;            // réduit la sensibilité du pan
+  ctrl.rotateSpeed = 2.0       
+  ctrl.zoomSpeed = 0.8         
+  ctrl.panSpeed = 0.3          
+  ctrl.dynamicDampingFactor = 0.2  
+  ctrl.staticMoving = true         
   ctrl.noZoom = false;
-  ctrl.noPan = true;              // toggle par shift
-  ctrl.staticMoving = false;      // laisser à false pour effet d'inertie
-  ctrl.dynamicDampingFactor = 0.3; // augmente l'amortissement (plus fluide)
+  ctrl.noPan = true;              
+
 
   // toggle pan avec shift
   window.addEventListener('keydown', (e) => {
