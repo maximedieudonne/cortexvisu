@@ -9,6 +9,7 @@ let eraseMode = false;
 let selectedTextureName = null;
 
 let drawScalarsMap = {}; // { textureName: Float32Array }
+let drawColorMap = {};   // { textureName: { [vertexIndex]: '#rrggbb' } }
 let drawHistory = []; // historique des dessins
 let drawStatusEl = null;
 let brushPreview = null;
@@ -53,8 +54,9 @@ export function initDrawTool({ mesh, container, camera, scene, renderer }) {
     if (!name) return alert("Veuillez entrer un nom.");
     if (drawScalarsMap[name]) return alert("Nom déjà utilisé.");
 
-    const scalarArray = new Float32Array(mesh.geometry.attributes.position.count).fill(0.0);
-    drawScalarsMap[name] = scalarArray;
+    const count = mesh.geometry.attributes.position.count;
+    drawScalarsMap[name] = new Float32Array(count).fill(0.0);
+    drawColorMap[name] = {};
 
     const opt = document.createElement('option');
     opt.value = name;
@@ -63,7 +65,7 @@ export function initDrawTool({ mesh, container, camera, scene, renderer }) {
     textureSelect.value = name;
 
     selectedTextureName = name;
-    applyDrawTexture(mesh, scalarArray);
+    applyDrawTexture(mesh, drawScalarsMap[name], drawColorMap[name]);
     modal.classList.add('hidden');
     drawTools.style.display = 'block';
 
@@ -75,7 +77,7 @@ export function initDrawTool({ mesh, container, camera, scene, renderer }) {
   textureSelect.addEventListener('change', () => {
     selectedTextureName = textureSelect.value;
     if (selectedTextureName && drawScalarsMap[selectedTextureName]) {
-      applyDrawTexture(mesh, drawScalarsMap[selectedTextureName], brushColor);
+      applyDrawTexture(mesh, drawScalarsMap[selectedTextureName], drawColorMap[selectedTextureName]);
       drawTools.style.display = 'block';
     }
   });
@@ -105,7 +107,7 @@ export function initDrawTool({ mesh, container, camera, scene, renderer }) {
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObject(mesh);
     if (intersects.length > 0) {
-      updateBrushPreviewPosition(intersects[0].point);
+      updateBrushPreviewPosition(intersects[0].point, mesh);
       if (!drawModeActive || !isDrawing || !selectedTextureName) return;
       event.stopPropagation();
       paint(mesh, intersects[0]);
@@ -113,7 +115,7 @@ export function initDrawTool({ mesh, container, camera, scene, renderer }) {
   });
 
   container.addEventListener('mousedown', (e) => {
-    if (drawModeActive && e.button === 2 && selectedTextureName) { // right-click
+    if (drawModeActive && e.button === 2 && selectedTextureName) {
       isDrawing = true;
       e.stopPropagation();
     }
@@ -132,32 +134,34 @@ function paint(mesh, intersect) {
   const geometry = mesh.geometry;
   const posAttr = geometry.attributes.position;
   const brushRadius = brushSize * 0.0025;
-
-  const mousePoint = intersect.point;
+  const point = intersect.point;
   const scalars = drawScalarsMap[selectedTextureName];
+  const colorMap = drawColorMap[selectedTextureName];
 
   pushHistory(selectedTextureName);
 
   for (let i = 0; i < posAttr.count; i++) {
     const v = new THREE.Vector3().fromBufferAttribute(posAttr, i);
-    if (v.distanceTo(mousePoint) < brushRadius) {
-      scalars[i] = eraseMode ? 0.0 : 1.0;
+    if (v.distanceTo(point) < brushRadius) {
+      scalars[i] = 1.0;
+      colorMap[i] = brushColor;
     }
   }
 
-  applyDrawTexture(mesh, scalars, brushColor);
+  applyDrawTexture(mesh, scalars, colorMap);
 }
 
-function applyDrawTexture(mesh, scalarArray, hexColor = '#cccccc') {
+function applyDrawTexture(mesh, scalarArray, colorMap) {
   const colors = new Float32Array(scalarArray.length * 3);
-  const brushRgb = hexToRgb01(brushColor);
 
   for (let i = 0; i < scalarArray.length; i++) {
     const s = scalarArray[i];
     if (s === 0) {
       colors.set([0.8, 0.8, 0.8], i * 3);
     } else {
-      colors.set([brushRgb.r, brushRgb.g, brushRgb.b], i * 3);
+      const hex = colorMap[i] || '#ff0000';
+      const { r, g, b } = hexToRgb01(hex);
+      colors.set([r, g, b], i * 3);
     }
   }
 
@@ -204,13 +208,15 @@ function undo(mesh) {
   if (drawHistory.length === 0 || !selectedTextureName) return;
   const prev = drawHistory.pop();
   drawScalarsMap[selectedTextureName] = prev;
-  applyDrawTexture(mesh, prev, brushColor);
+  applyDrawTexture(mesh, prev, drawColorMap[selectedTextureName]);
   showDrawStatus("Annulation effectuée");
 }
 
 function exportDrawTexture(name) {
   const scalars = drawScalarsMap[name];
-  const blob = new Blob([JSON.stringify(Array.from(scalars))], { type: 'application/json' });
+  const colors = drawColorMap[name];
+  const data = { scalars: Array.from(scalars), colors };
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `${name}.json`;
@@ -231,13 +237,10 @@ function updateBrushPreview(scene) {
   brushPreview.scale.set(scale, scale, scale);
 }
 
-function updateBrushPreviewPosition(intersectionPoint) {
-  if (!brushPreview || !selectedTextureName) return;
+function updateBrushPreviewPosition(intersectionPoint, mesh) {
+  if (!brushPreview || !selectedTextureName || !mesh) return;
 
-  const geometry = brushPreview.parent.children.find(obj => obj.isMesh)?.geometry;
-  if (!geometry) return;
-
-  const posAttr = geometry.attributes.position;
+  const posAttr = mesh.geometry.attributes.position;
   let closestVertex = null;
   let minDist = Infinity;
 
