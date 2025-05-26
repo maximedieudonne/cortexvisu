@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
+
 import { applyColormap } from './colormap.js';
 
 let renderer, scene, camera, controls;
@@ -44,17 +45,28 @@ function initRenderer(container) {
 }
 
 function initControls(cam, domElement) {
-  const ctrl = new OrbitControls(cam, domElement);
-  ctrl.enableDamping = true;
-  ctrl.dampingFactor = 0.1;
-  ctrl.rotateSpeed = 0.6;
-  ctrl.zoomSpeed = 1.2;
-  ctrl.enablePan = false;
+  const ctrl = new TrackballControls(cam, domElement);
+  ctrl.rotateSpeed = 3.0;         // optionnel : un peu moins vif
+  ctrl.zoomSpeed = 1.0;           // optionnel : plus doux
+  ctrl.panSpeed = 0.4;            // 👈 réduit la sensibilité du pan
+  ctrl.noZoom = false;
+  ctrl.noPan = true;              // toggle par shift
+  ctrl.staticMoving = false;      // laisser à false pour effet d'inertie
+  ctrl.dynamicDampingFactor = 0.3; // 👈 augmente l'amortissement (plus fluide)
+
+  // toggle pan avec shift
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Shift') ctrl.noPan = false;
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'Shift') ctrl.noPan = true;
+  });
+
   return ctrl;
 }
 
 function initLights(scene) {
-  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
   const light = new THREE.DirectionalLight(0xffffff, 0.8);
   light.position.set(1, 1, 1);
   scene.add(light);
@@ -142,9 +154,12 @@ export function toggleEdges(mesh, scene, enabled, options = {}) {
  * Lance la boucle d'animation
  */
 export function startRenderingLoop(scene, camera) {
+  const clock = new THREE.Clock();
+
   function animate() {
     requestAnimationFrame(animate);
-    controls.update();
+    const delta = clock.getDelta();
+    controls.update(delta);
     renderer.render(scene, camera);
   }
   animate();
