@@ -1,41 +1,65 @@
-# cortexvisu
-package for 3D cortex visualization with tree.js
+# CortexVisu
 
+**CortexVisu** est une application de visualisation interactive de maillages 3D du cortex cérébral (format GIfTI `.gii`) avec :
+
+- Colorimétrie dynamique (colormaps, plage personnalisée)
+- Histogramme interactif des valeurs scalaires
+- Options d’affichage (arêtes, wireframe, fond)
+- Outils de dessin de texture manuelle
+- Interface utilisateur simple et personnalisable
+
+---
+
+## Aperçu
 
 
 ![alt text](https://github.com/maximedieudonne/cortexvisu/blob/master/asset/screen.JPG)
 
-Exemple d'utilisation pour vos projets perso :
+---
 
-from cortexvisu import show
+## Installation
 
-show(
-    surface_path='lh.pial.gii',
-    texture_path='curvature.txt',
-    title='Visualisation du cortex gauche'
-)
+### 1. Cloner ce dépôt
 
-
-La fonction show() :
-- Charge le mesh .gii avec ta fonction load_mesh() (retourne un trimesh.Trimesh)
-- Charge les scalaires avec read_gii_file() (tableau numpy/TrackedArray)
-- Prépare un dictionnaire JSON pour passer à Three.js :
-    - vertices: liste de [x, y, z]
-    - faces: liste de [i1, i2, i3]
-    - scalars: liste de float
-- Sauvegarde un fichier temporaire .json
-- Lance un serveur local pour ouvrir la visualisation
-
-
-
-npm create vite@latest cortexvisu --template vanilla
+```bash
+git clone https://github.com/maximedieudonne/cortexvisu.git
 cd cortexvisu
+```
+
+### 2. Installer Python + dépendances backend
+
+#### Option 1 (recommandée) : via Conda
+
+```bash
+conda env create -f environment.yml
+conda activate cortexvisu
+```
+
+#### Option 2 : via pip (si tu n’utilises pas Conda)
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Installer Node.js + dépendances frontend
+
+Si npm ou node ne sont pas installés : Télécharger depuis https://nodejs.org
+
+Ensuite, dans le dossier du projet :
+
+```bash
 npm install
-npm install three colormap
+```
 
+## Lancement de l'application
 
-run dev_laucher.py
-puis dans le bash : 
+En local (tout-en-un)
 
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-npm run dev
+```bash
+python launch_app.py
+```
+
+Cela : 
+- Compile le frontend (vite build)
+- Lance le backend FastAPI (uvicorn)
+- Ouvre automatiquement le navigateur à http://localhost:8000

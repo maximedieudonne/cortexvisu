@@ -2,3 +2,4 @@ fastapi
 uvicorn
 nibabel
 matplotlib
+python-multipart
