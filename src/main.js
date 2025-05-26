@@ -292,4 +292,21 @@ function setupUI() {
 
   minInput.value = scalarMin.toFixed(2);
   maxInput.value = scalarMax.toFixed(2);
+
+  const textureToggle = document.getElementById('toggle-texture');
+  if (textureToggle) {
+    textureToggle.addEventListener('change', () => {
+      const useTexture = textureToggle.checked;
+      const material = currentMesh.material;
+    
+      if (useTexture) {
+        material.vertexColors = true;
+      } else {
+        material.vertexColors = false;
+        material.color.set(0xcccccc); // couleur grise par défaut
+      }
+
+      material.needsUpdate = true;
+    });
+  }
 }
