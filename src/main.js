@@ -21,6 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const setup = setupScene();
       scene = setup.scene;
       camera = setup.camera;
+      const setBackgroundColor = setup.setBackgroundColor;
+
+      const bgInput = document.getElementById('bg-color-picker'); 
+      if (bgInput && setBackgroundColor) {
+        setBackgroundColor(bgInput.value); // initialiser avec la valeur par défaut
+        bgInput.addEventListener('input', () => {
+          setBackgroundColor(bgInput.value);
+        });
+      }
 
       scalarMin = Math.min(...data.scalars);
       scalarMax = Math.max(...data.scalars);

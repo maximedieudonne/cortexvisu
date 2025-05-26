@@ -21,7 +21,12 @@ export function setupScene() {
   initLights(scene);
   initResizeHandler(container, camera, renderer);
 
-  return { scene, camera, renderer, controls };
+  // expose une fonction pour changer le fond plus tard
+  function setBackgroundColor(hexColor) {
+    scene.background = new THREE.Color(hexColor);
+  }
+
+  return { scene, camera, renderer, controls,setBackgroundColor };
 }
 
 function initCamera(container) {
