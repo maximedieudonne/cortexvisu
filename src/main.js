@@ -108,10 +108,13 @@ function setupTextureUpload() {
     scalarMin = Math.min(...data.scalars);
     scalarMax = Math.max(...data.scalars);
 
-    updateMeshColors(currentMesh, data.scalars, currentColormap, scalarMin, scalarMax);
+    document.getElementById('min-val').value = scalarMin.toFixed(2);
+    document.getElementById('max-val').value = scalarMax.toFixed(2);
 
+    updateMeshColors(currentMesh, data.scalars, currentColormap, scalarMin, scalarMax);
     updateColorbar(scalarMin, scalarMax, currentColormap);
     drawHistogram(data.scalars, currentColormap, scalarMin, scalarMax);
+
 
     initColormapEditor(data, scalarMin, scalarMax, (colors) => {
       const attr = currentMesh.geometry.getAttribute('color');
@@ -176,7 +179,7 @@ function setupUI() {
     const maxVal = parseFloat(maxInput.value);
 
     if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) {
-      updateMeshColors(currentMesh, data.scalars, currentColormap, scalarMin, scalarMax);
+      updateMeshColors(currentMesh, data.scalars, cmap, minVal, maxVal);
 
       updateColorbar(minVal, maxVal, cmap);
       drawHistogram(data.scalars, cmap, minVal, maxVal);

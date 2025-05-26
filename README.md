@@ -63,3 +63,11 @@ Cela :
 - Compile le frontend (vite build)
 - Lance le backend FastAPI (uvicorn)
 - Ouvre automatiquement le navigateur à http://localhost:8000
+
+
+### mode dev : 
+
+```bash
+npm run dev
+python -m uvicorn tools.api:app --reload --port 8000
+```
