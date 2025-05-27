@@ -200,5 +200,28 @@ async def list_folder_files(request: Request):
         return JSONResponse(status_code=500, content={"error": f"Erreur serveur : {str(e)}"})
 
 
+@app.post("/api/load-texture-paths")
+def load_textures_from_paths(payload: dict = Body(...)):
+    paths = payload.get("paths", [])
+    result = []
+
+    for path in paths:
+        try:
+            scalars = load_scalar_data(path)
+            result.append({
+                "name": os.path.basename(path),
+                "path": path,
+                "scalars": scalars
+            })
+        except Exception as e:
+            result.append({
+                "name": os.path.basename(path),
+                "path": path,
+                "error": str(e)
+            })
+
+    return result
+
+
 # Static file serving
 app.mount("/", StaticFiles(directory=Path("dist"), html=True), name="static")

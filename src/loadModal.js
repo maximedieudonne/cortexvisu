@@ -36,26 +36,6 @@ export function initLoadModal(onFilesLoaded) {
   openBtn?.addEventListener('click', () => modal.classList.remove('hidden'));
   closeBtn?.addEventListener('click', () => modal.classList.add('hidden'));
 
-  // ------------------
-  // OPTION 1 — Fichier unique
-  fileTrigger?.addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
-    if (file) {
-      filePathDisplay.textContent = file.name;
-    }
-  });
-
-  addSingleBtn?.addEventListener('click', () => {
-    const file = fileInput.files[0];
-    if (file && !database.find(f => f.name === file.name && f.file)) {
-      database.push({ name: file.name, file });
-      updateDbList();
-      showStatus(`Ajouté : ${file.name}`);
-      filePathDisplay.textContent = 'file path .gii';
-    }
-  });
 
   // ------------------
   // OPTION 2 — Dossier (manuel)
@@ -106,6 +86,26 @@ export function initLoadModal(onFilesLoaded) {
     });
 
     updateDbList();
+    // Bouton : Tout sélectionner les fichiers dans la DB
+selectAllBtn?.addEventListener('click', () => {
+  dbList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+});
+
+// Bouton : Supprimer les fichiers sélectionnés de la DB
+deleteBtn?.addEventListener('click', () => {
+  const toDelete = Array.from(dbList.querySelectorAll('input:checked'))
+    .map(cb => parseInt(cb.dataset.index));
+
+  if (toDelete.length === 0) {
+    showStatus("Aucun fichier à supprimer", true);
+    return;
+  }
+
+  database = database.filter((_, i) => !toDelete.includes(i));
+  updateDbList();
+  showStatus(`${toDelete.length} supprimé(s)`);
+});
+
     showStatus(`${checked.length} fichier(s) ajouté(s)`);
     folderPathInput.value = '';
   });
@@ -139,28 +139,40 @@ export function initLoadModal(onFilesLoaded) {
     });
   }
 
-  deleteBtn?.addEventListener('click', () => {
-    const toDelete = Array.from(dbList.querySelectorAll('input:checked'))
-      .map(cb => parseInt(cb.dataset.index));
-    database = database.filter((_, i) => !toDelete.includes(i));
-    updateDbList();
-  });
-
-  selectAllBtn?.addEventListener('click', () => {
-    dbList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-  });
-
   loadSelectedBtn?.addEventListener('click', async () => {
-    const selected = database.filter((_, i) =>
-      dbList.querySelector(`input[data-index="${i}"]`)?.checked
-    );
+  const selected = database.filter((_, i) =>
+    dbList.querySelector(`input[data-index="${i}"]`)?.checked
+  );
 
-    if (selected.length === 0) {
-      showStatus("Aucun fichier sélectionné", true);
-      return;
+  if (selected.length === 0) {
+    showStatus("Aucun fichier sélectionné", true);
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:8000/api/import-meshes-from-folder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        folder: selectedFolder,
+        files: selected.map(f => f.name)
+      })
+    });
+
+    const importedMeshes = await res.json();
+
+    if (Array.isArray(importedMeshes) && onFilesLoaded) {
+      onFilesLoaded(importedMeshes); // contient vertices, faces, etc.
     }
 
-    if (onFilesLoaded) onFilesLoaded(selected);
     modal.classList.add('hidden');
-  });
+    showStatus(`${importedMeshes.length} mesh importé(s) avec succès`);
+  } catch (error) {
+    console.error("Erreur d'import de mesh :", error);
+    showStatus("Erreur serveur lors de l'import des maillages", true);
+  }
+});
+
+
+  
 }

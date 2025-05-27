@@ -17,6 +17,7 @@
         <button class="accordion-header">Chargement des données</button>
         <div class="accordion-content">
           <button id="open-load-modal">Charger maillages</button>
+          <button id="open-texture-modal">Charger textures</button>
         </div>
       </div>
 
@@ -97,16 +98,7 @@
 
     <!-- Colonne gauche -->
     <div class="modal-column">
-      <h4>Option 1 : Fichier unique</h4>
-      <!-- Input masqué -->
-      <input type="file" id="mesh-input" style="display: none;" />
-      <button id="select-single-file">Sélectionner un fichier</button>
-      <div class="path-display" id="selected-file-path">file path .gii</div>
-      <button id="add-single-to-db">Ajouter à la base de données</button>
-
-      <hr />
-
-      <h4>Option 2 : Dossier</h4>
+      <h4>Selectionner un Dossier</h4>
 
       <label for="manual-folder-path">Chemin du dossier :</label>
       <input type="text" id="selected-folder-path" placeholder="Ex: D:/..." />
@@ -141,6 +133,46 @@
   </div>
 </div>
 
+<!-- Modale texture-->
+
+<div id="texture-modal" class="modal hidden">
+  <div class="modal-content texture-grid">
+    <button id="cancel-texture-load" style="align-self: flex-end;">✖</button>
+
+    <!-- Colonne gauche : Import dossier -->
+    <div>
+      <h4>Textures : Dossier</h4>
+      <input type="text" id="texture-folder-path" placeholder="Chemin du dossier" />
+      <button id="browse-texture-folder">Sélectionner un dossier</button>
+
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <input type="text" id="texture-folder-filter" placeholder=".func.gii" />
+        <button id="filter-texture-folder">Filtrer</button>
+      </div>
+
+      <ul id="texture-folder-list" class="file-list-display checkbox-list"></ul>
+      <button id="add-texture-to-db">Ajouter à la base de données</button>
+      <button id="select-all-textures">Tout sélectionner</button>
+    </div>
+
+    <!-- Colonne centre : Liste des maillages chargés -->
+    <div>
+      <h4>Maillages chargés</h4>
+      <ul id="loaded-mesh-list" class="file-list-display"></ul>
+    </div>
+
+    <!-- Colonne droite : Liste textures sélectionnées -->
+    <div>
+      <h4>Textures sélectionnées</h4>
+      <ul id="texture-db-list" class="file-list-display checkbox-list"></ul>
+
+      <div class="modal-actions">
+        <button id="delete-selected-textures">Supprimer</button>
+        <button id="load-textures-button">Charger</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
   <!-- Message status -->

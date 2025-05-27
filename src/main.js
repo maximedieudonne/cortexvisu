@@ -14,6 +14,8 @@ import Plotly from 'plotly.js-dist-min';
 import './style.css';
 import * as THREE from 'three';
 import { initLoadModal } from './loadModal.js';
+import { initTextureModal } from './textureModal.js';
+
 
 let meshes = []; // Array of { id, name, meshObject, scalars }
 let selectedMeshIndex = null;
@@ -55,8 +57,28 @@ function setupUI() {
     });
     updateMeshList();
   });
-  console.log("initLoadModal appelé");
-  
+
+  initTextureModal(meshes, async (textures) => {
+  const texturePaths = textures.map(t => t.path);
+
+  const res = await fetch("http://localhost:8000/api/load-texture-paths", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paths: texturePaths })
+  });
+
+  const data = await res.json();
+
+  data.forEach((t, i) => {
+    if (meshes[i]) {
+      meshes[i].scalars = t.scalars;
+    }
+  });
+
+  updateSelectedMesh();
+  showStatus("Textures appliquées avec succès");
+});
+
 }
 
 
