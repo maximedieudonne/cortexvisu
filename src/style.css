@@ -1,4 +1,4 @@
-/* ==== Base globale ==== */
+/* ==== BASE GLOBALE ==== */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
@@ -14,9 +14,9 @@ body {
   overflow: hidden;
 }
 
-/* ==== Panneau gauche (contrôles) ==== */
+/* ==== PANNEAU GAUCHE ==== */
 #left-panel {
-  width: 260px;
+  width: 280px;
   background-color: #1e1e1e;
   padding: 20px 15px;
   overflow-y: auto;
@@ -31,40 +31,33 @@ body {
   padding-bottom: 4px;
 }
 
-#left-panel section {
-  margin-bottom: 24px;
-}
-
 #left-panel label {
   display: block;
-  margin: 10px 0 4px;
+  margin: 8px 0 4px;
   font-size: 14px;
   color: #ccc;
 }
 
 #left-panel input[type="file"],
 #left-panel select,
-#left-panel input[type="number"] {
+#left-panel input[type="number"],
+#left-panel input[type="color"],
+#left-panel input[type="text"],
+#left-panel input[type="range"] {
   width: 100%;
   padding: 6px;
-  margin-bottom: 8px;
   background-color: #2a2a2a;
   color: white;
   border: 1px solid #444;
   border-radius: 4px;
   font-size: 13px;
-  transition: border 0.2s;
-}
-
-#left-panel select:hover,
-#left-panel input[type="number"]:hover,
-#left-panel input[type="file"]:hover {
-  border-color: #666;
+  margin-bottom: 8px;
+  box-sizing: border-box;
 }
 
 #left-panel button {
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px;
   background-color: #3a3a3a;
   color: white;
   border: none;
@@ -72,26 +65,20 @@ body {
   cursor: pointer;
   font-weight: bold;
   transition: background 0.2s;
+  margin-top: 8px;
 }
 
 #left-panel button:hover {
   background-color: #505050;
 }
 
-#left-panel button:disabled {
-  background-color: #333;
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-/* ==== Vue centrale : Viewer WebGL ==== */
+/* ==== VIEWER CENTRAL ==== */
 #viewer-container {
   flex: 1;
   position: relative;
   background: black;
 }
 
-/* Canvas WebGL */
 #viewer-container canvas {
   position: absolute;
   width: 100%;
@@ -99,34 +86,14 @@ body {
   display: block;
 }
 
-/* Message de statut */
-#status-message {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(255, 0, 0, 0.15);
-  padding: 6px 10px;
-  color: #ff7777;
-  font-size: 13px;
-  border-radius: 4px;
-  display: none;
-}
-
-/* ==== Panneau droit ==== */
+/* ==== PANNEAU DROIT ==== */
 #right-panel {
-  width: 260px;
+  width: 280px;
   background-color: #1e1e1e;
   padding: 20px 15px;
   overflow-y: auto;
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.4);
   z-index: 2;
-}
-
-/* Sections du panneau droit */
-#colorbar-section,
-#histogram-section {
-  margin-bottom: 30px;
 }
 
 #right-panel h3 {
@@ -137,50 +104,11 @@ body {
   color: #ddd;
 }
 
-/* Colorbar */
-#colorbar-canvas {
-  display: block;
-  margin: 0 auto;
-  border: 1px solid #444;
-  border-radius: 4px;
-}
-
-.colorbar-labels {
-  text-align: center;
-  margin-top: 6px;
-  font-size: 12px;
-  color: #ccc;
-  text-shadow: 0 0 5px rgba(255,255,255,0.3);
-}
-
-.colorbar-labels span {
-  display: block;
-  margin: 2px 0;
-}
-
 .colorbar-wrapper {
   display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.colorbar-labels {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 256px;
-  font-size: 12px;
-  color: #ccc;
-  text-align: right;
-  line-height: 1;
-}
-
-
-
-.colorbar-wrapper {
   position: relative;
-  width: fit-content;
   height: 256px;
+  width: fit-content;
 }
 
 .colorbar-canvas-container {
@@ -190,302 +118,58 @@ body {
 }
 
 #colorbar-canvas {
-  display: block;
   width: 100%;
   height: 100%;
   border: 1px solid #444;
+  border-radius: 4px;
 }
 
-.colorbar-tick-lines {
+.colorbar-tick-lines,
+.colorbar-discrete-tick-lines {
   position: absolute;
   left: 100%;
   top: 0;
-  height: 100%;
   width: 60px;
+  height: 100%;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  pointer-events: none;
+  font-size: 11px;
+  color: #ccc;
+}
+
+.colorbar-discrete-tick-lines .colorbar-tick {
+  position: absolute;
+  transform: translateY(-50%);
 }
 
 .colorbar-tick {
   display: flex;
   align-items: center;
-  font-size: 11px;
-  color: #ccc;
   gap: 4px;
 }
 
 .colorbar-tick::before {
   content: '';
-  display: inline-block;
   width: 6px;
   height: 1px;
-  background-color: #aaa;
+  background: #aaa;
 }
 
-.colorbar-discrete-tick-lines {
-  position: absolute;
-  left: 100%;
-  top: 0;
-  height: 100%;
-  width: 60px;
-  pointer-events: none;
-}
-
-.colorbar-discrete-tick-lines .colorbar-tick {
-  position: absolute;
-  font-size: 11px;
-  color: #ccc;
-  white-space: nowrap;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.colorbar-discrete-tick-lines .colorbar-tick::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 1px;
-  background-color: #aaa;
-}
-
-
-
-/* Histogramme */
-#histogram-image {
-  display: block;
-  margin: 10px auto 0;
+#histogram-container {
   width: 100%;
+  height: 300px;
   border: 1px solid #444;
   border-radius: 4px;
 }
 
-
-.modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.modal-content {
-  background: #222;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  color: white;
-}
-
-.modal.hidden {
-  display: none;
-}
-
-.range-editor {
-  display: flex;
-  gap: 10px;
-  margin: 10px 0;
-}
-
-#custom-colormap-preview {
-  margin-bottom: 10px;
-  border: 1px solid #444;
-}
-
-
-.colormap-preview-wrapper {
-  position: relative;
-  width: 256px;
-  height: auto;
-  margin-bottom: 10px;
-}
-
-#colormap-labels {
-  position: absolute;
-  top: -18px;
-  left: 0;
-  width: 100%;
-  height: 18px;
-  pointer-events: none;
-  font-size: 11px;
-  color: #ccc;
-  display: flex;
-  justify-content: space-between;
-}
-
-#colormap-labels span {
-  position: absolute;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  text-shadow: 0 0 4px #000;
-}
-
-
-/* ==== MODAL ENHANCEMENTS ==== */
-.modal-content {
-  background: #222;
-  padding: 20px 24px;
-  border-radius: 12px;
-  width: 480px;
-  max-width: 90vw;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-#custom-colormap-preview {
-  display: block;
-  width: 100%;
-  height: 30px;
-  border-radius: 4px;
-  border: 1px solid #444;
-  margin-top: 4px;
-}
-
-.colormap-preview-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-#colormap-labels {
-  position: absolute;
-  top: -18px;
-  left: 0;
-  width: 100%;
-  height: 18px;
-  font-size: 12px;
-  color: #ccc;
-  display: flex;
-  justify-content: space-between;
-  pointer-events: none;
-}
-
-#colormap-labels span {
-  position: absolute;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  text-shadow: 0 0 4px #000;
-}
-
-.range-editor,
-.color-editor,
-.name-editor {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.range-editor label,
-.color-editor label,
-.name-editor label {
-  flex: 1;
-  font-size: 13px;
-  color: #ddd;
-}
-
-.range-editor input[type="number"],
-.color-editor input[type="color"],
-.name-editor input[type="text"] {
-  width: 100%;
-  padding: 6px;
-  background-color: #2a2a2a;
-  color: white;
-  border: 1px solid #444;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-#add-range-btn {
-  align-self: flex-end;
-  margin-left: auto;
-  padding: 6px 12px;
-  background-color: #444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-#add-range-btn:hover {
-  background-color: #666;
-}
-
-#custom-ranges-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 160px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.range-entry {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.range-entry input[type="color"] {
-  width: 30px;
-  height: 24px;
-  border: none;
-  background: none;
-  padding: 0;
-}
-
-.range-entry button {
-  background: none;
-  color: #ccc;
-  font-size: 16px;
-  border: none;
-  cursor: pointer;
-}
-
-.range-entry button:hover {
-  color: red;
-}
-
-.modal-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.modal-actions button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  background-color: #333;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.modal-actions button:hover {
-  background-color: #555;
-}
-
-
+/* ==== ACCORDIONS ==== */
 .accordion {
   margin-bottom: 12px;
 }
 
 .accordion-header {
-  width: 100%;
-  text-align: left;
   background: #2a2a2a;
   color: white;
   padding: 8px 10px;
@@ -510,5 +194,220 @@ body {
 }
 
 .accordion.open .accordion-content {
-  max-height: 500px; /* ou plus selon le contenu */
+  max-height: 800px;
+}
+
+/* ==== MODALES ==== */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-content {
+  position: relative;
+  background: #222;
+  padding: 20px;
+  border-radius: 12px;
+  width: 480px;
+  max-width: 90vw;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button {
+  padding: 8px 12px;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modal-actions button:hover {
+  background-color: #555;
+}
+
+/* ==== MESSAGE STATUS ==== */
+#draw-status-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 14px;
+  z-index: 1000;
+  display: none;
+}
+
+
+/* ==== MODALE ==== */
+.hidden {
+  display: none;
+}
+
+
+
+.path-display {
+  margin: 8px 0;
+  font-size: 13px;
+  background-color: #1a1a1a;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  color: #ccc;
+  font-family: monospace;
+}
+
+
+
+
+/* ===== MODALE DE CHARGEMENT MAILLAGE ===== */
+
+
+
+#load-modal .modal-content {
+  display: flex;
+  gap: 20px;
+  width: 1000px;
+  max-width: 95vw;
+  background: #222;
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+}
+
+#load-modal h4 {
+  margin-top: 0;
+  font-size: 16px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 4px;
+  margin-bottom: 12px;
+}
+
+#load-modal button {
+  padding: 8px 12px;
+  background-color: #333;
+  border: none;
+  color: white;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#load-modal button:hover {
+  background-color: #555;
+}
+
+#load-modal .path-display {
+  margin: 10px 0;
+  font-size: 13px;
+  background-color: #1a1a1a;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  color: #ccc;
+  font-family: monospace;
+}
+
+#load-modal input[type="text"] {
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background-color: #2a2a2a;
+  color: white;
+  font-size: 13px;
+  flex: 1;
+}
+
+.file-list-display {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #444;
+  border-radius: 4px;
+  margin: 8px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.checkbox-list li {
+  padding: 6px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+  background-color: #2a2a2a;
+}
+
+.checkbox-list li:last-child {
+  border-bottom: none;
+}
+
+.checkbox-list input[type="checkbox"] {
+  transform: scale(1.2);
+}
+
+/* Disposition à deux colonnes */
+#load-modal .modal-content > div {
+  flex: 1;
+}
+
+/* Espacement entre champs */
+#load-modal .modal-content > div > *:not(:last-child) {
+  margin-bottom: 10px;
+}
+
+
+.modal-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.modal-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+.close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  color: white;
 }
