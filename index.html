@@ -10,158 +10,136 @@
   <div id="app">
     
     <!-- Panneau gauche (contrôles) -->
-      <aside id="left-panel">
-  <h2>Contrôles</h2>
+  <aside id="left-panel">
+    <h2>Contrôles</h2>
 
-  <div class="accordion">
-    <button class="accordion-header">Chargement</button>
+    <div class="accordion">
+      <button class="accordion-header">Chargement</button>
+      <div class="accordion-content">
+        <label for="mesh-input">Charger un mesh GII:</label>
+        <input type="file" id="mesh-input" accept=".gii" />
+        <label for="texture-input">Charger une texture GII:</label>
+        <input type="file" id="texture-input" accept=".gii" />
+        <label><input type="checkbox" id="toggle-texture" checked />Afficher la texture</label>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header">Affichage</button>
+      <div class="accordion-content">
+        <label for="bg-color-picker">Couleur du fond :</label>
+        <input type="color" id="bg-color-picker" value="#111111" />
+        <label><input type="checkbox" id="wireframe" /> Wireframe</label>
+        <label><input type="checkbox" id="edges-toggle" /> Afficher les arêtes</label>
+        <label for="edge-color">Couleur des arêtes :</label>
+        <input type="color" id="edge-color" value="#ffffff" />
+        <label for="edge-width">Épaisseur :</label>
+        <input type="range" id="edge-width" min="1" max="10" step="1" value="1" />
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header">Colormap</button>
+      <div class="accordion-content">
+        <label for="colormap-select">Colormap :</label>
+        <select id="colormap-select">
+          <option value="viridis">Viridis</option>
+          <option value="jet">Jet</option>
+          <option value="plasma">Plasma</option>
+          <option value="grayscale">Grayscale</option>
+        </select>
+        <button id="open-colormap-editor">Personnaliser la colormap</button>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header">Échelle</button>
+      <div class="accordion-content">
+        <label for="min-val">Min :</label>
+        <input type="number" id="min-val" step="0.01" />
+        <label for="max-val">Max :</label>
+        <input type="number" id="max-val" step="0.01" />
+        <button id="apply-range">Appliquer</button>
+      </div>
+    </div>
+
+    <section class="accordion">
+    <button class="accordion-header"> Dessiner sur le maillage</button>
     <div class="accordion-content">
-      <label for="mesh-input">Charger un mesh GII:</label>
-      <input type="file" id="mesh-input" accept=".gii" />
-
-      <label for="texture-input">Charger une texture GII:</label>
-      <input type="file" id="texture-input" accept=".gii" />
-
-      <label><input type="checkbox" id="toggle-texture" checked />Afficher la texture</label>
-    </div>
-  </div>
-
-  <div class="accordion">
-    <button class="accordion-header">Affichage</button>
-    <div class="accordion-content">
-      <label for="bg-color-picker">Couleur du fond :</label>
-      <input type="color" id="bg-color-picker" value="#111111" />
-
-      <label><input type="checkbox" id="wireframe" /> Wireframe</label>
-      <label><input type="checkbox" id="edges-toggle" /> Afficher les arêtes</label>
-
-      <label for="edge-color">Couleur des arêtes :</label>
-      <input type="color" id="edge-color" value="#ffffff" />
-      <label for="edge-width">Épaisseur :</label>
-      <input type="range" id="edge-width" min="1" max="10" step="1" value="1" />
-    </div>
-  </div>
-
-  <div class="accordion">
-    <button class="accordion-header">Colormap</button>
-    <div class="accordion-content">
-      <label for="colormap-select">Colormap :</label>
-      <select id="colormap-select">
-        <option value="viridis">Viridis</option>
-        <option value="jet">Jet</option>
-        <option value="plasma">Plasma</option>
-        <option value="grayscale">Grayscale</option>
-      </select>
-      <button id="open-colormap-editor">Personnaliser la colormap</button>
-    </div>
-  </div>
-
-  <div class="accordion">
-    <button class="accordion-header">Échelle</button>
-    <div class="accordion-content">
-      <label for="min-val">Min :</label>
-      <input type="number" id="min-val" step="0.01" />
-      <label for="max-val">Max :</label>
-      <input type="number" id="max-val" step="0.01" />
-      <button id="apply-range">Appliquer</button>
-    </div>
-  </div>
-
-  <section class="accordion">
-  <button class="accordion-header"> Dessiner sur le maillage</button>
-  <div class="accordion-content">
-    <button id="create-draw-texture-btn">Nouvelle texture</button>
-    
-    <label for="manual-texture-select">Texture manuelle :</label>
-    <select id="manual-texture-select"></select>
-
-    <div id="draw-tools" style="display: none;">
-      <label for="brush-color">Couleur :</label>
-      <input type="color" id="brush-color" value="#ff0000" />
-
-      <label for="brush-size">Taille :</label>
-      <input type="range" id="brush-size" min="1" max="50" value="5" />
-    </div>
-  </div>
-</section>
-</aside>
-
-
-
-
-
-    <!-- Fenêtre centrale (Three.js) -->
-    <main id="viewer-container">
-      <!-- Le canvas WebGL sera injecté par Three.js ici -->
-    </main>
-
-    <!-- Panneau droit : Colorbar + Histogramme -->
-    <aside id="right-panel">
-      <section id="colorbar-section">
-        <h3>Colorbar</h3>
-          <div class="colorbar-wrapper">
-            <div class="colorbar-canvas-container">
-              <canvas id="colorbar-canvas" width="20" height="256"></canvas>
-              <div class="colorbar-tick-lines" id="colorbar-tick-lines"></div>
-              <div class="colorbar-discrete-tick-lines" id="colorbar-discrete-tick-lines"></div>
-            </div>
-          </div>
-      </section>
-
-      <section id="histogram-section">
-        <h3>Histogramme</h3>
-        <div id="histogram-container" style="width: 100%; height: 300px;"></div>
-      </section>
-    </aside>
-
-  </div>
-
-  <!-- Modale -->
-  <div id="colormap-editor-modal" class="modal hidden">
-    <div class="modal-content">
-        <h2>Éditeur de Colormap</h2>
-
-        <div class="colormap-preview-wrapper">
-          <div id="colormap-labels"></div>
-          <canvas id="custom-colormap-preview" width="400" height="30"></canvas>
+      <button id="create-draw-texture-btn">Nouvelle texture</button>
+      <label for="manual-texture-select">Texture manuelle :</label>
+      <select id="manual-texture-select"></select>
+        <div id="draw-tools" style="display: none;">
+          <label for="brush-color">Couleur :</label>
+          <input type="color" id="brush-color" value="#ff0000" />
+          <label for="brush-size">Taille :</label>
+          <input type="range" id="brush-size" min="1" max="50" value="5" />
         </div>
+    </div>
+    </section>
 
-        <div class="name-editor">
-          <label>Nom de la colormap :
-            <input type="text" id="colormap-name" />
-          </label>
+    <section class="accordion">
+      <button class="accordion-header"> Analyse morphologique</button>
+      <div class="accordion-content">
+        <button id="compute-curvature">Calculer la courbure</button>
+      </div>
+    </section>
+  </aside>
+
+  <!-- Fenêtre centrale (Three.js) -->
+  <main id="viewer-container">
+    <!-- Le canvas WebGL sera injecté par Three.js ici -->
+  </main>
+
+  <!-- Panneau droit : Colorbar + Histogramme -->
+  <aside id="right-panel">
+    <section id="colorbar-section">
+      <h3>Colorbar</h3>
+      <div class="colorbar-wrapper">
+        <div class="colorbar-canvas-container">
+          <canvas id="colorbar-canvas" width="20" height="256"></canvas>
+            <div class="colorbar-tick-lines" id="colorbar-tick-lines"></div>
+            <div class="colorbar-discrete-tick-lines" id="colorbar-discrete-tick-lines"></div>
         </div>
+      </div>
+    </section>
 
-        <div class="color-editor">
-          <label>Couleur de fond :
-          <input type="color" id="background-color" value="#808080" />
-          </label>
-        </div>
+    <section id="histogram-section">
+      <h3>Histogramme</h3>
+      <div id="histogram-container" style="width: 100%; height: 300px;"></div>
+    </section>
+  </aside>
+</div>
 
-        <div class="range-editor">
-          <label>Min :
-          <input type="number" id="range-min" />
-          </label>
-          <label>Max :
-          <input type="number" id="range-max" />
-          </label>
-          <label>Couleur :
-          <input type="color" id="range-color" />
-          </label>
-          <button id="add-range-btn">Ajouter un range</button>
-        </div>
-
-        <div id="custom-ranges-list"></div>
-
-        <div class="modal-actions">
-          <button id="add-to-list">Ajouter à la liste</button>
-          <button id="save-colormap">Sauvegarder</button>
-          <button id="load-colormap">Importer</button>
-          <button id="close-editor">Fermer</button>
-        </div>
-
+<!-- Modale -->
+<div id="colormap-editor-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Éditeur de Colormap</h2>
+    <div class="colormap-preview-wrapper">
+      <div id="colormap-labels"></div>
+      <canvas id="custom-colormap-preview" width="400" height="30"></canvas>
+    </div>
+    <div class="name-editor">
+      <label>Nom de la colormap :<input type="text" id="colormap-name" /></label>
+    </div>
+    <div class="color-editor">
+      <label>Couleur de fond :<input type="color" id="background-color" value="#808080" /></label>
+    </div>
+    <div class="range-editor">
+      <label>Min :<input type="number" id="range-min" /></label>
+      <label>Max :<input type="number" id="range-max" /></label>
+      <label>Couleur :<input type="color" id="range-color" /></label>
+      <button id="add-range-btn">Ajouter un range</button>
+    </div>
+    <div id="custom-ranges-list"></div>
+    <div class="modal-actions">
+      <button id="add-to-list">Ajouter à la liste</button>
+      <button id="save-colormap">Sauvegarder</button>
+      <button id="load-colormap">Importer</button>
+      <button id="close-editor">Fermer</button>
     </div>
   </div>
+</div>
 
   <!-- Fenêtre modale pour nommer la texture -->
 <div id="draw-modal" class="modal hidden">

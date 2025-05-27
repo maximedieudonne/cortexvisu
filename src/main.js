@@ -2,6 +2,7 @@ import { setupScene, createMesh, startRenderingLoop, setWireframe, toggleEdges }
 import { applyColormap, getColormapType } from './colormap.js';
 import { initColormapEditor } from './colormapEditor.js';
 import { initDrawTool } from './draw.js';
+import { showStatus } from './utils.js'
 import Plotly from 'plotly.js-dist-min';
 import './style.css';
 import * as THREE from 'three';
@@ -204,6 +205,9 @@ function setupUI() {
       material.needsUpdate = true;
     });
   }
+
+  setupCurvatureComputation();
+
 }
 
 // ------------------------------
@@ -370,3 +374,42 @@ function getBackgroundColorFromCanvas(ranges) {
   if (usedColor) return usedColor;
   return '#808080';
 }
+
+
+// ------------------------------
+// COMPUTE CURVATURE
+// ------------------------------
+
+
+function setupCurvatureComputation() {
+  const btn = document.getElementById('compute-curvature');
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    showStatus("Calcul de la courbure...");
+
+    const res = await fetch("http://localhost:8000/api/compute-curvature", {
+      method: "POST"
+    });
+
+    const json = await res.json();
+    if (!json.scalars || !Array.isArray(json.scalars)) {
+      showStatus("Erreur lors du calcul de la courbure", true);
+      return;
+    }
+
+    data.scalars = json.scalars;
+    scalarMin = Math.min(...data.scalars);
+    scalarMax = Math.max(...data.scalars);
+
+    document.getElementById('min-val').value = scalarMin.toFixed(2);
+    document.getElementById('max-val').value = scalarMax.toFixed(2);
+
+    updateMeshColors(currentMesh, data.scalars, currentColormap, scalarMin, scalarMax);
+    updateColorbar(scalarMin, scalarMax, currentColormap);
+    drawHistogram(data.scalars, currentColormap, scalarMin, scalarMax);
+
+    showStatus("Courbure appliquée avec succès");
+  });
+}
+

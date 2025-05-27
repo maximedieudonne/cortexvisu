@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from tools.parser import load_mesh, load_scalar_data
+from tools.curvature import compute_curvature
 from pathlib import Path
 
 app = FastAPI()
 
-# (Optionnel : à retirer si tu ne bosses plus avec vite dev)
+# Autoriser le frontend local
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -37,5 +38,12 @@ async def upload_texture(file: UploadFile = File(...)):
     scalars = load_scalar_data("temp_texture.gii")
     return JSONResponse({"scalars": scalars})
 
-# Sert les fichiers Vite buildés
+@app.post("/api/compute-curvature")
+def compute_curvature_endpoint():
+    path = compute_curvature("temp_mesh.gii")  # public/curvature.gii
+    scalars = load_scalar_data(path)
+    return {"scalars": scalars, "message": "Courbure calculée et chargée "}
+
+
+# Ce bloc doit venir après toutes les routes
 app.mount("/", StaticFiles(directory=Path("dist"), html=True), name="static")

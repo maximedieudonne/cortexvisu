@@ -19,10 +19,10 @@
 
 ## Installation
 
-### 1. Cloner ce dépôt
+### 1. Fork et clone
 
 ```bash
-git clone https://github.com/maximedieudonne/cortexvisu.git
+git clone {ton fork}
 cd cortexvisu
 ```
 
@@ -67,6 +67,8 @@ Cela :
 
 ### mode dev : 
 
+window : double clic sur dev.bat puis aller a l'adresse http://localhost:5173/
+linux : lancer dev.sh (apres avoir ajouter les droit d'execution chmod x...)
 ```bash
 npm run dev
 python -m uvicorn tools.api:app --reload --port 8000
