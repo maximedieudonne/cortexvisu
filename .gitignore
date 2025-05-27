@@ -181,3 +181,4 @@ cython_debug/
 /public/
 /data
 /node_modules
+/uploads/
