@@ -1,6 +1,7 @@
 import { showStatus } from './utils.js';
 
-export function initTextureModal(meshes, onTexturesLoaded) {
+export function initTextureModal(meshes, onTexturesLoaded, updateTextureListForSelectedMesh) {
+
   const modal = document.getElementById('texture-modal');
   const openBtn = document.getElementById('open-texture-modal');
   const closeBtn = document.getElementById('cancel-texture-load');
@@ -25,6 +26,22 @@ export function initTextureModal(meshes, onTexturesLoaded) {
   openBtn?.addEventListener('click', () => {
     modal.classList.remove('hidden');
     renderMeshList();
+    function renderMeshList() {
+  meshList.innerHTML = '';
+  meshes.forEach((m, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<label><input type="checkbox" data-index="${i}" /> ${m.name}</label>`;
+    meshList.appendChild(li);
+  });
+
+  const selectAllMeshesBtn = document.createElement('button');
+  selectAllMeshesBtn.textContent = "Tout sélectionner";
+  selectAllMeshesBtn.addEventListener('click', () => {
+    meshList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+  });
+  meshList.parentElement.appendChild(selectAllMeshesBtn);
+}
+
   });
 
   closeBtn?.addEventListener('click', () => modal.classList.add('hidden'));
@@ -85,19 +102,46 @@ export function initTextureModal(meshes, onTexturesLoaded) {
   });
 
   loadBtn?.addEventListener('click', () => {
-    if (textureDB.length === 0) {
-      showStatus("Aucune texture sélectionnée", true);
-      return;
-    }
+  const selectedMeshIndices = Array.from(meshList.querySelectorAll('input:checked'))
+    .map(cb => parseInt(cb.dataset.index));
 
-    if (meshes.length !== textureDB.length) {
-      showStatus("Le nombre de textures ne correspond pas aux maillages chargés", true);
-      return;
-    }
+  const selectedTextureIndices = Array.from(dbList.querySelectorAll('input:checked'))
+    .map(cb => parseInt(cb.dataset.index));
 
-    onTexturesLoaded(textureDB);
-    modal.classList.add('hidden');
+  if (selectedMeshIndices.length === 0 || selectedTextureIndices.length === 0) {
+    showStatus("Veuillez sélectionner au moins un mesh et une texture", true);
+    return;
+  }
+
+  if (
+    selectedMeshIndices.length > 1 &&
+    selectedMeshIndices.length !== selectedTextureIndices.length
+  ) {
+    showStatus("Nombre de meshes et textures différents : association impossible", true);
+    return;
+  }
+
+  selectedTextureIndices.forEach((textureIdx, i) => {
+    const meshIdx = selectedMeshIndices.length === 1
+      ? selectedMeshIndices[0]
+      : selectedMeshIndices[i];
+
+    const texture = textureDB[textureIdx];
+    if (!meshes[meshIdx].textures) meshes[meshIdx].textures = [];
+    meshes[meshIdx].textures.push(texture);
   });
+
+  if (selectedMeshIndices.length === 1) {
+  updateTextureListForSelectedMesh(meshes[selectedMeshIndices[0]]);
+} else if (selectedMeshIndices.length === selectedTextureIndices.length) {
+  // Met à jour pour le dernier mesh associé
+  updateTextureListForSelectedMesh(meshes[selectedMeshIndices[selectedMeshIndices.length - 1]]);
+}
+
+  showStatus("Textures associées aux maillages avec succès");
+  modal.classList.add('hidden');
+});
+
 
   function renderFolderFileList(files) {
     folderList.innerHTML = '';
@@ -128,4 +172,6 @@ export function initTextureModal(meshes, onTexturesLoaded) {
       dbList.appendChild(li);
     });
   }
+
+  
 }

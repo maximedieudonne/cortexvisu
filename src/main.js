@@ -58,26 +58,31 @@ function setupUI() {
     updateMeshList();
   });
 
-  initTextureModal(meshes, async (textures) => {
-  const texturePaths = textures.map(t => t.path);
+  initTextureModal(
+  meshes,
+  async (textures) => {
+    const texturePaths = textures.map(t => t.path);
 
-  const res = await fetch("http://localhost:8000/api/load-texture-paths", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ paths: texturePaths })
-  });
+    const res = await fetch("http://localhost:8000/api/load-texture-paths", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paths: texturePaths })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  data.forEach((t, i) => {
-    if (meshes[i]) {
-      meshes[i].scalars = t.scalars;
-    }
-  });
+    data.forEach((t, i) => {
+      if (meshes[i]) {
+        meshes[i].scalars = t.scalars;
+      }
+    });
 
-  updateSelectedMesh();
-  showStatus("Textures appliquées avec succès");
-});
+    updateSelectedMesh();
+    showStatus("Textures appliquées avec succès");
+  },
+  updateTextureListForSelectedMesh 
+);
+
 
 }
 
@@ -109,6 +114,52 @@ function updateMeshList() {
   });
 }
 
+function updateTextureListForSelectedMesh(mesh) {
+  const textureSelect = document.getElementById('texture-list');
+  if (!textureSelect) return;
+
+  textureSelect.innerHTML = '';
+
+  if (!mesh || !mesh.textures) return;
+
+  mesh.textures.forEach((t, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = t.name;
+    textureSelect.appendChild(opt);
+  });
+}
+
+const textureSelect = document.getElementById('texture-list');
+
+textureSelect?.addEventListener('change', (e) => {
+  const mesh = meshes[selectedMeshIndex];
+  const textureIndex = parseInt(e.target.value);
+
+  if (mesh && mesh.textures && mesh.textures[textureIndex]) {
+    const texture = mesh.textures[textureIndex];
+
+    // Charge les scalars depuis le fichier si ce n'est pas déjà fait
+    fetch("http://localhost:8000/api/load-texture-paths", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paths: [texture.path] })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data[0]?.scalars) {
+          mesh.scalars = data[0].scalars;
+          updateSelectedMesh(); // re-render le mesh avec la nouvelle texture
+          showStatus(`Texture "${texture.name}" appliquée`);
+        }
+      })
+      .catch(err => {
+        console.error("Erreur lors du chargement de la texture :", err);
+        showStatus("Échec du chargement de la texture", true);
+      });
+  }
+});
+
 function updateSelectedMesh() {
   if (selectedMeshIndex === null) return;
 
@@ -127,6 +178,8 @@ function updateSelectedMesh() {
 
 function setupVisualizationSection() {
   const colormapSelect = document.getElementById('colormap-select');
+  const meshSelect = document.getElementById('mesh-list');
+
   colormapSelect.addEventListener('change', () => {
     currentColormap = colormapSelect.value;
     if (selectedMeshIndex !== null) {
@@ -136,7 +189,45 @@ function setupVisualizationSection() {
       drawHistogram(mesh.scalars, currentColormap);
     }
   });
+
+  meshSelect.addEventListener('change', (e) => {
+    selectedMeshIndex = parseInt(e.target.value);
+    updateSelectedMesh();
+    updateTextureListForSelectedMesh(meshes[selectedMeshIndex]);
+  });
+
+  // ✅ <-- ajoute ça ici
+  const textureSelect = document.getElementById('texture-list');
+
+  textureSelect?.addEventListener('change', (e) => {
+    const mesh = meshes[selectedMeshIndex];
+    const textureIndex = parseInt(e.target.value);
+
+    if (mesh && mesh.textures && mesh.textures[textureIndex]) {
+      const texture = mesh.textures[textureIndex];
+
+      fetch("http://localhost:8000/api/load-texture-paths", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths: [texture.path] })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data[0]?.scalars) {
+            mesh.scalars = data[0].scalars;
+            updateSelectedMesh();
+            showStatus(`Texture "${texture.name}" appliquée`);
+          }
+        })
+        .catch(err => {
+          console.error("Erreur lors du chargement de la texture :", err);
+          showStatus("Échec du chargement de la texture", true);
+        });
+    }
+  });
 }
+
+
 
 function updateMeshColors(mesh, scalars, cmap, min, max) {
   const newColors = applyColormap(scalars, cmap, min, max);
