@@ -17,7 +17,7 @@ import { initLoadModal } from './loadModal.js';
 import { initTextureModal } from './textureModal.js';
 
 
-let meshes = []; // Array of { id, name, meshObject, scalars }
+let meshes = []; // Array of { id, name, meshObject, scalars}
 let selectedMeshIndex = null;
 let scene, camera;
 let scalarMin = 0, scalarMax = 1;
@@ -56,6 +56,8 @@ function setupUI() {
       meshes.push({ id: data.id || data.name, name: data.name, meshObject, scalars: null });
     });
     updateMeshList();
+    meshes.forEach(updateTextureListForSelectedMesh);
+
   });
 
   initTextureModal(
@@ -80,10 +82,8 @@ function setupUI() {
     updateSelectedMesh();
     showStatus("Textures appliquées avec succès");
   },
-  updateTextureListForSelectedMesh 
+  updateTextureListForSelectedMesh
 );
-
-
 }
 
 
@@ -114,21 +114,33 @@ function updateMeshList() {
   });
 }
 
-function updateTextureListForSelectedMesh(mesh) {
+async function updateTextureListForSelectedMesh(mesh) {
   const textureSelect = document.getElementById('texture-list');
-  if (!textureSelect) return;
+  if (!textureSelect || !mesh) return;
+
+  const associations = await loadTextureAssociations();
+  const textureNames = associations[mesh.name];
 
   textureSelect.innerHTML = '';
+  mesh.textures = [];
 
-  if (!mesh || !mesh.textures) return;
+  if (!textureNames) return;
 
-  mesh.textures.forEach((t, i) => {
+  const textures = Array.isArray(textureNames)
+    ? textureNames
+    : [textureNames];
+
+  textures.forEach((tname, i) => {
+    const texturePath = `/public/texture/${tname}`;
+    mesh.textures.push({ name: tname, path: texturePath });
+
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = t.name;
+    opt.textContent = tname;
     textureSelect.appendChild(opt);
   });
 }
+
 
 const textureSelect = document.getElementById('texture-list');
 
@@ -196,8 +208,7 @@ function setupVisualizationSection() {
     updateTextureListForSelectedMesh(meshes[selectedMeshIndex]);
   });
 
-  // ✅ <-- ajoute ça ici
-  const textureSelect = document.getElementById('texture-list');
+
 
   textureSelect?.addEventListener('change', (e) => {
     const mesh = meshes[selectedMeshIndex];
@@ -239,6 +250,19 @@ function updateMeshColors(mesh, scalars, cmap, min, max) {
     mesh.geometry.setAttribute('color', new THREE.BufferAttribute(newColors, 3));
   }
 }
+
+
+async function loadTextureAssociations() {
+  try {
+    const res = await fetch("/public/associations.json");
+    if (!res.ok) throw new Error("Fichier associations non trouvé");
+    return await res.json();
+  } catch (e) {
+    console.warn("Aucune association texture trouvée :", e);
+    return {};
+  }
+}
+
 
 function updateColorbar(min, max, cmap) {
   // identique à ta version actuelle

@@ -139,7 +139,7 @@ deleteBtn?.addEventListener('click', () => {
     });
   }
 
-  loadSelectedBtn?.addEventListener('click', async () => {
+  loadSelectedBtn?.addEventListener("click", async () => {
   const selected = database.filter((_, i) =>
     dbList.querySelector(`input[data-index="${i}"]`)?.checked
   );
@@ -150,29 +150,66 @@ deleteBtn?.addEventListener('click', () => {
   }
 
   try {
-    const res = await fetch("http://localhost:8000/api/import-meshes-from-folder", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        folder: selectedFolder,
-        files: selected.map(f => f.name)
-      })
-    });
+    const formData = new FormData();
 
-    const importedMeshes = await res.json();
+    for (const file of selected) {
+      const res = await fetch("http://localhost:8000/api/read-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: file.path }),
+      });
 
-    if (Array.isArray(importedMeshes) && onFilesLoaded) {
-      onFilesLoaded(importedMeshes); // contient vertices, faces, etc.
+      if (!res.ok) {
+        throw new Error(`Erreur lecture fichier ${file.name}`);
+      }
+
+      const buffer = await res.arrayBuffer();
+      const blob = new Blob([buffer]);
+      const fileObj = new File([blob], file.name);
+      formData.append("files", fileObj);  // ✅ bien utiliser le même nom ici
     }
 
-    modal.classList.add('hidden');
+    const uploadRes = await fetch("http://localhost:8000/api/upload-mesh", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text();
+      throw new Error("Erreur backend : " + errText);
+    }
+
+    const jsonList = await uploadRes.json();
+    console.log("Réponse upload-mesh:", jsonList);
+
+    if (!Array.isArray(jsonList)) {
+      throw new Error("Format inattendu de la réponse: " + JSON.stringify(jsonList));
+    }
+
+    const importedMeshes = await Promise.all(
+      jsonList.map(async ({ name, json }) => {
+        const res = await fetch(`/public/meshes/${json}`);
+        const data = await res.json();
+        return {
+          id: json,
+          name,
+          vertices: data.vertices,
+          faces: data.faces,
+        };
+      })
+    );
+
+    if (onFilesLoaded) {
+      onFilesLoaded(importedMeshes);
+    }
+
+    modal.classList.add("hidden");
     showStatus(`${importedMeshes.length} mesh importé(s) avec succès`);
+
   } catch (error) {
-    console.error("Erreur d'import de mesh :", error);
-    showStatus("Erreur serveur lors de l'import des maillages", true);
+    console.error("Erreur lors de l'import :", error);
+    showStatus("Erreur pendant l'import: " + error.message, true);
   }
 });
 
-
-  
 }
