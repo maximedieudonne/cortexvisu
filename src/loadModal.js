@@ -78,9 +78,26 @@ export function initLoadModal(onFilesLoaded) {
       jsonPath: `/public/meshes/${json}`,  // Chemin du fichier JSON
     }));
 
+    
+    // Mise à jour de la liste déroulante des mesh dans Visualisation
+    const meshListVis = document.getElementById("mesh-list");
+    const importedMeshesName = importedMeshes.map(item => item.id);
 
+    meshListVis.innerHTML = ""; // Vider la liste actuelle
+
+    importedMeshesName.forEach(name => {
+      const option = document.createElement("option");
+      option.value = name;
+      const nameParts = name.split("_").slice(1).join("_");   
+      const displayName = nameParts.replace(/\.json$/, "");  
+      option.textContent = displayName;
+      meshListVis.appendChild(option);
+    });
+
+    // message user
     modal.classList.add("hidden");
     showStatus(`${importedMeshes.length} maillage(s) importé(s) avec succès`);
+
 
   } catch (error) {
     console.error("Erreur lors de l'import des maillages:", error);
