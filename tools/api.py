@@ -30,14 +30,15 @@ app.add_middleware(
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
+
 MESH_OUTPUT = Path("public/meshes")
 MESH_OUTPUT.mkdir(parents=True, exist_ok=True)
+
 TEXTURE_OUTPUT = Path("public/textures")
 TEXTURE_OUTPUT.mkdir(parents=True, exist_ok=True)
 
-MAPPING_FILE = Path("public/mesh_texture_map.json")
-if not MAPPING_FILE.exists():
-    MAPPING_FILE.write_text(json.dumps({}))  # fichier vide par défaut
+ASSOCIATIONS_FILE = Path("public/textures/associations.json")
+
 
 @app.get("/api/ping")
 def ping():
@@ -46,47 +47,54 @@ def ping():
 
 
 @app.post("/api/upload-mesh")
-async def upload_mesh(files: List[UploadFile] = File(...)):
+async def upload_mesh(payload: dict = Body(...)):
     results = []
 
-    for file in files:
-        temp_path = UPLOAD_DIR / file.filename
-        with open(temp_path, "wb") as f:
-            f.write(await file.read())
+    # Récupération des chemins des fichiers .gii depuis le payload
+    mesh_paths = payload.get("mesh_paths", [])
 
-        json_path = generate_threejs_json(temp_path, MESH_OUTPUT)
+    # Traitement des maillages
+    for mesh_path in mesh_paths:
+        json_path = generate_threejs_json(Path(mesh_path), MESH_OUTPUT)
 
         results.append({
-            "name": file.filename,
+            "mesh_path": mesh_path,
             "json": json_path.name
         })
 
-    return results 
+    return results
+
 
 
 
 @app.post("/api/upload-texture")
-async def upload_texture(files: List[UploadFile] = File(...)):
+async def upload_texture(payload: dict = Body(...)):
     result = []
 
-    for file in files:
-        file_id = str(uuid.uuid4())
-        filename = f"{file_id}_{file.filename}"
-        filepath = UPLOAD_DIR / filename
+    # Récupération des chemins des fichiers de texture
+    texture_paths = payload.get("texture_paths", [])
 
-        with open(filepath, "wb") as f:
-            content = await file.read()
-            f.write(content)
+    for texture_path in texture_paths:
+        # Extraction des scalars à partir du fichier de texture
+        try:
+            scalars = load_scalar_data(texture_path)
+            # Création du JSON pour chaque texture
+            json_path = TEXTURE_OUTPUT / f"{Path(texture_path).stem}.json"
+            json_path.write_text(json.dumps({"scalars": scalars}))
 
-        scalars = load_scalar_data(str(filepath))
-        result.append({
-            "id": file_id,
-            "name": file.filename,
-            "scalars": scalars,
-            "path": str(filepath)
-        })
+            result.append({
+                "texture_path": texture_path,
+                "json": json_path.name
+            })
+        except Exception as e:
+            result.append({
+                "texture_path": texture_path,
+                "error": str(e)
+            })
 
     return JSONResponse(result)
+
+
 
 @app.post("/api/compute-curvature")
 async def compute_curvature_batch(mesh_ids: List[str] = Form(...)):
@@ -242,51 +250,94 @@ async def read_file(payload: dict = Body(...)):
     return file_path.read_bytes()
 
 
-@app.post("/api/load-and-associate-textures")
-async def load_and_associate_textures(payload: dict = Body(...)):
-    textures = payload.get("textures", [])  # [{path, name}]
-    meshes = payload.get("meshes", [])      # [{id, name}]
+@app.post("/api/associate-textures")
+async def associate_textures(payload: dict = Body(...)):
+    mapping = {}
+    
+    # Récupération des données d'association (meshes et textures)
+    meshes = payload.get("meshes", [])
+    textures = payload.get("textures", [])
 
-    if not textures or not meshes:
-        return JSONResponse(status_code=400, content={"error": "Textures ou meshes manquants"})
+    for mesh in meshes:
+        mesh_id = mesh["id"]
+        associated_textures = []
 
-    try:
-        mapping = json.loads(MAPPING_FILE.read_text())
-    except Exception:
-        mapping = {}
+        for texture in textures:
+            # Si une texture est associée au mesh, on ajoute son chemin
+            if texture["mesh_id"] == mesh_id:
+                associated_textures.append(texture["json"])
 
-    response = []
+        if associated_textures:
+            mapping[mesh_id] = associated_textures
 
-    for i, texture in enumerate(textures):
-        path = Path(texture["path"])
-        if not path.exists():
-            continue
+    # Sauvegarde de l'association dans un fichier JSON
+    association_path = Path("public/mesh_texture_map.json")
+    with open(association_path, "w") as f:
+        json.dump(mapping, f, indent=2)
 
-        name = path.stem
-        mesh_idx = 0 if len(meshes) == 1 else i
-        mesh_id = meshes[mesh_idx]["id"]
+    return {"status": "success", "mapping": mapping}
 
+@app.post("/api/generate-database")
+async def generate_database(data: dict = Body(...)):
+    mesh_paths = data.get("meshes", [])
+    texture_paths = data.get("textures", [])
+
+    if not mesh_paths or not texture_paths:
+        return JSONResponse(status_code=400, content={"error": "Les chemins des maillages ou des textures sont manquants."})
+
+    # Générer les fichiers JSON pour les maillages
+    mesh_jsons = []
+    for mesh_path in mesh_paths:
         try:
-            scalars = load_scalar_data(str(path))
+            # Générer le fichier JSON pour chaque maillage
+            json_path = generate_threejs_json(Path(mesh_path), MESH_OUTPUT)
+            mesh_jsons.append({
+                "mesh_path": mesh_path,
+                "json": json_path.name
+            })
         except Exception as e:
-            continue
+            print(f"Erreur lors de la génération du maillage pour {mesh_path}: {e}")
 
-        json_path = TEXTURE_OUTPUT / f"{mesh_id}_{name}.json"
-        json_path.write_text(json.dumps({"scalars": scalars}))
+    # Générer les fichiers JSON pour les textures
+    texture_jsons = []
+    for texture_path in texture_paths:
+        try:
+            # Charger les données de texture
+            scalars = load_scalar_data(texture_path)
+            texture_name = Path(texture_path).stem
 
-        if mesh_id not in mapping:
-            mapping[mesh_id] = []
-        mapping[mesh_id].append(str(json_path.name))
+            # Créer le fichier JSON pour chaque texture
+            texture_json_path = TEXTURE_OUTPUT / f"{texture_name}.json"
+            texture_json_path.write_text(json.dumps({"scalars": scalars}))
 
-        response.append({
-            "mesh_id": mesh_id,
-            "texture_file": json_path.name,
-            "texture_name": texture["name"]
-        })
+            texture_jsons.append({
+                "texture_path": texture_path,
+                "json": texture_json_path.name
+            })
+        except Exception as e:
+            print(f"Erreur lors de la génération de la texture pour {texture_path}: {e}")
 
-    MAPPING_FILE.write_text(json.dumps(mapping, indent=2))
-    return response
+    # Mettre à jour le fichier associations.json avec les textures et les maillages
+    associations = {}
+    for mesh_json in mesh_jsons:
+        associations[mesh_json["mesh_path"]] = []
 
+    for texture_json in texture_jsons:
+        texture_path = texture_json["texture_path"]
+        # Associer la texture au maillage ici (ex: simple association 1-1 pour l'exemple)
+        for mesh_json in mesh_jsons:
+            if mesh_json["mesh_path"] not in associations:
+                associations[mesh_json["mesh_path"]] = []
+            associations[mesh_json["mesh_path"]].append(texture_json["json"])
+
+    # Sauvegarder les associations dans le fichier JSON
+    ASSOCIATIONS_FILE.write_text(json.dumps(associations, indent=2))
+
+    return JSONResponse({
+        "meshes": mesh_jsons,
+        "textures": texture_jsons,
+        "associations": associations
+    })
 
 # Static file serving
 app.mount("/", StaticFiles(directory=Path("dist"), html=True), name="static")
