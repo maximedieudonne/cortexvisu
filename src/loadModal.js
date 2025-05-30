@@ -50,59 +50,28 @@ export function initLoadModal(onFilesLoaded) {
     return;
   }
 
-  // Extraire les chemins des maillages sélectionnés
-  const meshPaths = selected.map(f => f.path);
 
-  // Envoi des chemins des maillages au backend pour traitement
-  try {
-    const res = await fetch("http://localhost:8000/api/upload-mesh", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mesh_paths: meshPaths  // Envoi des chemins des fichiers sélectionnés
-      })
-    });
+  // Mise à jour de la liste déroulante des maillages dans Visualisation
+  const meshListVis = document.getElementById("mesh-list");
+  meshListVis.innerHTML = ""; // Vider la liste actuelle
 
-    const jsonList = await res.json();
-    console.log("Réponse upload-mesh:", jsonList);
+  selected.forEach(file => {
+    const option = document.createElement("option");
+    option.value = file.path;  // ou `file.name` si tu veux juste un nom
+    const fileName = file.name.replace(/\.json$/, "").replace(/\.[^/.]+$/, ""); // Nettoyage
+    option.textContent = fileName;
+    meshListVis.appendChild(option);
+  });
 
-    // Vérification du format de la réponse
-    if (!Array.isArray(jsonList)) {
-      throw new Error("Format inattendu de la réponse: " + JSON.stringify(jsonList));
-    }
-
-    // Traitement de la réponse : ajout des fichiers JSON dans la liste
-    const importedMeshes = jsonList.map(({ mesh_path, json }) => ({
-      id: json,
-      name: mesh_path,
-      jsonPath: `/public/meshes/${json}`,  // Chemin du fichier JSON
-    }));
-
-    
-    // Mise à jour de la liste déroulante des mesh dans Visualisation
-    const meshListVis = document.getElementById("mesh-list");
-    const importedMeshesName = importedMeshes.map(item => item.id);
-
-    meshListVis.innerHTML = ""; // Vider la liste actuelle
-
-    importedMeshesName.forEach(name => {
-      const option = document.createElement("option");
-      option.value = name;
-      const nameParts = name.split("_").slice(1).join("_");   
-      const displayName = nameParts.replace(/\.json$/, "");  
-      option.textContent = displayName;
-      meshListVis.appendChild(option);
-    });
-
-    // message user
-    modal.classList.add("hidden");
-    showStatus(`${importedMeshes.length} maillage(s) importé(s) avec succès`);
-
-
-  } catch (error) {
-    console.error("Erreur lors de l'import des maillages:", error);
-    showStatus("Erreur pendant l'import des maillages", true);
+  const firstOption = meshListVis.options[0];
+  if (firstOption) {
+    meshListVis.value = firstOption.value;
+    meshListVis.dispatchEvent(new Event("change"));
   }
+
+  modal.classList.add("hidden");
+  showStatus(`${selected.length} maillage(s) sélectionné(s) avec succès`);
+
 });
 
   // Ajoute un événement pour sélectionner tout dans la base de données

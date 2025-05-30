@@ -13,7 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from tools.mesh_to_threejs_json import generate_threejs_json
 from pathlib import Path
-
+from pydantic import BaseModel
 import json
 
 app = FastAPI()
@@ -42,8 +42,21 @@ ASSOCIATIONS_FILE = Path("public/textures/associations.json")
 
 @app.get("/api/ping")
 def ping():
-    return {"status": "ok", "message": "CortexVisu backend fonctionne 🎉"}
+    return {"status": "ok", "message": "CortexVisu backend fonctionne "}
 
+
+class MeshPathRequest(BaseModel):
+    path: str
+
+@app.post("/api/load-mesh-from-path")
+def load_mesh_from_path(req: MeshPathRequest):
+    path = req.path
+    try:
+        vertices, faces = load_mesh(path)
+        return JSONResponse({"vertices": vertices, "faces": faces})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    
 
 
 @app.post("/api/upload-mesh")

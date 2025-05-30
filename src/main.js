@@ -1,5 +1,5 @@
 // main.js
-import {setupScene,startRenderingLoop,} from './viewer.js';
+import {setupScene,startRenderingLoop, createMesh} from './viewer.js';
 import { applyColormap} from './colormap.js';
 import './style.css';
 import * as THREE from 'three';
@@ -12,10 +12,13 @@ let scene, camera;
 let scalarMin = 0, scalarMax = 1;
 let currentColormap = 'viridis';
 
+let data = {}; // debug
+let currentMesh = null;//debug
 
 document.addEventListener('DOMContentLoaded', () => {
   setupApp();
   setupUI();
+  setupMeshUpload()
 });
 
 function setupApp() {
@@ -37,40 +40,46 @@ function setupApp() {
 function setupUI() {
   setupAccordion();
   setupVisualizationSection();
-
-  //initLoadModal((importedFiles) => {
-   // importedFiles.forEach(data => {
-    //  const meshObject = createMesh(data);
-   //   meshes.push({ id: data.id || data.name, name: data.name, meshObject, scalars: null });
-  //  });
-  //  updateMeshList();
-  //  meshes.forEach(updateTextureListForSelectedMesh);
-
-  //});
-
   initLoadModal()
-
-  //initTextureModal(
-  //meshes,
-  //async (textures) => {
-  //  const texturePaths = textures.map(t => t.path);
-  //  const res = await fetch("http://localhost:8000/api/load-texture-paths", {
-  //    method: "POST",
-  //    headers: { "Content-Type": "application/json" },
-  //    body: JSON.stringify({ paths: texturePaths })
-  //  });
-  //  const data = await res.json();
-  //  data.forEach((t, i) => {
-  //    if (meshes[i]) {
-  //      meshes[i].scalars = t.scalars;
-  //    }
-  //  });
-  //  updateSelectedMesh();
-  //  showStatus("Textures appliquées avec succès");
-  //},
-  //updateTextureListForSelectedMesh()
-//);
 }
+
+
+// -----------------------------
+// CHARGEMENT DE MESH
+// -----------------------------
+function setupMeshUpload() {
+  const meshSelect = document.getElementById('mesh-list');
+
+  meshSelect.addEventListener('change', async () => {
+    const selectedId = meshSelect.value;
+    if (!selectedId) return;
+
+    try {
+      const res = await fetch("http://localhost:8000/api/load-mesh-from-path", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: selectedId }) // on envoie l'ID qui est en fait le chemin
+      });
+
+      const meshData = await res.json();
+
+      if (meshData.error) {
+        console.error("Erreur backend:", meshData.error);
+        return;
+      }
+
+      data.mesh = meshData;
+
+      if (currentMesh) scene.remove(currentMesh);
+
+      currentMesh = createMesh(meshData); 
+      scene.add(currentMesh);
+    } catch (error) {
+      console.error("Erreur lors du chargement du mesh:", error);
+    }
+  });
+}
+
 
 
 function setupAccordion() {
@@ -81,22 +90,6 @@ function setupAccordion() {
     });
   });
 }
-
-
-//function updateMeshList() {
-//  const meshSelect = document.getElementById('mesh-list');
-//  meshSelect.innerHTML = '';
-//  meshes.forEach((m, i) => {
-//    const opt = document.createElement('option');
-//    opt.value = i;
-//    opt.textContent = m.name;
-//    meshSelect.appendChild(opt);
-//  });
-//  meshSelect.addEventListener('change', e => {
-//    selectedMeshIndex = parseInt(e.target.value);
-//    updateSelectedMesh();
-//  });
-//}
 
 
 function setupVisualizationSection() {
