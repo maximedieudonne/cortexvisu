@@ -1,6 +1,6 @@
 import { showStatus } from './utils.js';
 
-export function initLoadModal(onFilesLoaded) {
+export function initLoadModal(meshesRef) {
   // DOM Elements
   const modal = document.getElementById('load-modal');
   const openBtn = document.getElementById('open-load-modal');
@@ -26,6 +26,7 @@ export function initLoadModal(onFilesLoaded) {
   const addFolderBtn = document.getElementById('add-folder-to-db');
   const loadSelectedBtn = document.getElementById('load-selected');
   const selectAllBtn = document.getElementById('select-all-folder-files');
+  const deleteBtn = document.getElementById('delete-selected');
 
   let folderFiles = [];
   let selectedFolder = '';
@@ -50,6 +51,16 @@ export function initLoadModal(onFilesLoaded) {
     return;
   }
 
+  // Mise à jour de la variable global meshRef
+  meshesRef.length = 0;
+  selected.forEach(file => {
+    meshesRef.push({
+      id : file.name,
+      name : file.name,
+      path: file.path,
+      texture : []
+    })
+  })
 
   // Mise à jour de la liste déroulante des maillages dans Visualisation
   const meshListVis = document.getElementById("mesh-list");
@@ -78,6 +89,20 @@ export function initLoadModal(onFilesLoaded) {
   document.getElementById('select-all')?.addEventListener('click', () => {
     dbList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);  // Sélectionner toutes les cases de la base de données
   });
+    // Bouton : Supprimer les fichiers sélectionnés de la DB
+  deleteBtn?.addEventListener('click', () => {
+  const toDelete = Array.from(dbList.querySelectorAll('input:checked'))
+    .map(cb => parseInt(cb.dataset.index));
+
+  if (toDelete.length === 0) {
+    showStatus("Aucun fichier à supprimer", true);
+    return;
+  }
+
+  database = database.filter((_, i) => !toDelete.includes(i));
+  updateDbList();
+  showStatus(`${toDelete.length} supprimé(s)`);
+});
 
   // -----------------------------------
   // Fonction pour ouvrir le dossier

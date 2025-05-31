@@ -1,6 +1,7 @@
 import { showStatus } from './utils.js';
 
-export function initTextureModal(meshes, onTexturesLoaded, updateTextureListForSelectedMesh) {
+export function initTextureModal(meshes, updateTextureListForSelectedMesh) {
+
   const modal = document.getElementById('texture-modal');
   const openBtn = document.getElementById('open-texture-modal');
   const closeBtn = document.getElementById('cancel-texture-load');
@@ -25,32 +26,46 @@ export function initTextureModal(meshes, onTexturesLoaded, updateTextureListForS
   openBtn?.addEventListener('click', () => {
     modal.classList.remove('hidden');
     renderMeshList();
+    function renderMeshList() {
+  meshList.innerHTML = '';
+  meshes.forEach((m, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<label><input type="checkbox" data-index="${i}" /> ${m.name}</label>`;
+    meshList.appendChild(li);
+  });
+
+  const selectAllMeshesBtn = document.createElement('button');
+  selectAllMeshesBtn.textContent = "Tout sélectionner";
+  selectAllMeshesBtn.addEventListener('click', () => {
+    meshList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+  });
+  meshList.parentElement.appendChild(selectAllMeshesBtn);
+}
+
   });
 
   closeBtn?.addEventListener('click', () => modal.classList.add('hidden'));
 
   browseBtn?.addEventListener('click', async () => {
     const path = folderInput.value.trim();
-    if (!path) return showStatus("Entrez un chemin de dossier", true);
+    if (!path) {
+      showStatus("Entrez un chemin de dossier", true);
+      return;
+    }
 
-    try {
-      const res = await fetch("http://localhost:8000/api/list-folder-files", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path })
-      });
+    const res = await fetch("http://localhost:8000/api/list-folder-files", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path })
+    });
 
-      const data = await res.json();
-      if (res.ok) {
-        folderFiles = data.files;
-        selectedFolder = path;
-        renderFolderFileList(folderFiles);
-        showStatus(`${folderFiles.length} fichier(s) trouvés`);
-      } else {
-        showStatus(data.error || "Erreur inconnue", true);
-      }
-    } catch (err) {
-      showStatus("Erreur réseau", true);
+    const data = await res.json();
+    if (res.ok) {
+      folderFiles = data.files;
+      selectedFolder = path;
+      renderFolderFileList(folderFiles);
+    } else {
+      showStatus(data.error || "Erreur", true);
     }
   });
 
@@ -86,44 +101,47 @@ export function initTextureModal(meshes, onTexturesLoaded, updateTextureListForS
     updateTextureDb();
   });
 
-  loadBtn?.addEventListener('click', async () => {
-    const selectedMeshIndices = Array.from(meshList.querySelectorAll('input:checked'))
-      .map(cb => parseInt(cb.dataset.index));
+  loadBtn?.addEventListener('click', () => {
+  const selectedMeshIndices = Array.from(meshList.querySelectorAll('input:checked'))
+    .map(cb => parseInt(cb.dataset.index));
 
-    const selectedTextureIndices = Array.from(dbList.querySelectorAll('input:checked'))
-      .map(cb => parseInt(cb.dataset.index));
+  const selectedTextureIndices = Array.from(dbList.querySelectorAll('input:checked'))
+    .map(cb => parseInt(cb.dataset.index));
 
-    if (!selectedMeshIndices.length || !selectedTextureIndices.length) {
-      return showStatus("Veuillez sélectionner au moins un mesh et une texture", true);
-    }
+  if (selectedMeshIndices.length === 0 || selectedTextureIndices.length === 0) {
+    showStatus("Veuillez sélectionner au moins un mesh et une texture", true);
+    return;
+  }
 
-    if (selectedMeshIndices.length > 1 &&
-        selectedMeshIndices.length !== selectedTextureIndices.length) {
-      return showStatus("Nombre de meshes et textures différents : association impossible", true);
-    }
+  if (
+    selectedMeshIndices.length > 1 &&
+    selectedMeshIndices.length !== selectedTextureIndices.length
+  ) {
+    showStatus("Nombre de meshes et textures différents : association impossible", true);
+    return;
+  }
 
-    selectedTextureIndices.forEach((texIdx, i) => {
-      const meshIdx = selectedMeshIndices.length === 1
-        ? selectedMeshIndices[0]
-        : selectedMeshIndices[i];
+  selectedTextureIndices.forEach((textureIdx, i) => {
+    const meshIdx = selectedMeshIndices.length === 1
+      ? selectedMeshIndices[0]
+      : selectedMeshIndices[i];
 
-      const texture = textureDB[texIdx];
-      if (!meshes[meshIdx].textures) meshes[meshIdx].textures = [];
-      meshes[meshIdx].textures.push(texture);
-    });
-
-    const lastMesh = selectedMeshIndices[selectedMeshIndices.length - 1];
-    updateTextureListForSelectedMesh(meshes[lastMesh]);
-
-    // Appel de chargement réel (scalars)
-    if (onTexturesLoaded) {
-      const selectedTextures = selectedTextureIndices.map(i => textureDB[i]);
-      await onTexturesLoaded(selectedTextures);
-    }
-
-    showStatus("Textures associées aux maillages avec succès");
-    modal.classList.add('hidden');
+    const texture = textureDB[textureIdx];
+    if (!meshes[meshIdx].textures) meshes[meshIdx].textures = [];
+    meshes[meshIdx].textures.push(texture);
   });
+
+  if (selectedMeshIndices.length === 1) {
+  updateTextureListForSelectedMesh(meshes[selectedMeshIndices[0]]);
+} else if (selectedMeshIndices.length === selectedTextureIndices.length) {
+  // Met à jour pour le dernier mesh associé
+  updateTextureListForSelectedMesh(meshes[selectedMeshIndices[selectedMeshIndices.length - 1]]);
+}
+
+  showStatus("Textures associées aux maillages avec succès");
+  modal.classList.add('hidden');
+});
+
 
   function renderFolderFileList(files) {
     folderList.innerHTML = '';
@@ -136,26 +154,24 @@ export function initTextureModal(meshes, onTexturesLoaded, updateTextureListForS
 
   function renderMeshList() {
     meshList.innerHTML = '';
-    meshes.forEach((m, i) => {
+    meshes.forEach(m => {
       const li = document.createElement('li');
-      li.innerHTML = `<label><input type="checkbox" data-index="${i}" /> ${m.name}</label>`;
+      li.textContent = m.name;
       meshList.appendChild(li);
     });
-
-    const btn = document.createElement('button');
-    btn.textContent = "Tout sélectionner";
-    btn.addEventListener('click', () => {
-      meshList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-    });
-    meshList.parentElement.appendChild(btn);
   }
 
   function updateTextureDb() {
     dbList.innerHTML = '';
     textureDB.forEach((entry, i) => {
       const li = document.createElement('li');
-      li.innerHTML = `<span>${entry.name}</span> <input type="checkbox" data-index="${i}" />`;
+      li.innerHTML = `
+        <span>${entry.name}</span>
+        <input type="checkbox" data-index="${i}" />
+      `;
       dbList.appendChild(li);
     });
   }
+
+  
 }

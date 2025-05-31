@@ -4,6 +4,7 @@ import { applyColormap} from './colormap.js';
 import './style.css';
 import * as THREE from 'three';
 import { initLoadModal } from './loadModal.js';
+import { initTextureModal } from './textureModal.js';
 
 
 let meshes = []; // Array of { id, name, meshObject, scalars}
@@ -40,7 +41,8 @@ function setupApp() {
 function setupUI() {
   setupAccordion();
   setupVisualizationSection();
-  initLoadModal()
+  initLoadModal(meshes);
+  initTextureModal(meshes, updateTextureListForSelectedMesh);
 }
 
 
@@ -91,10 +93,39 @@ function setupAccordion() {
   });
 }
 
+function updateTextureListForSelectedMesh(mesh) {
+  const textureSelect = document.getElementById("texture-list");
+  textureSelect.innerHTML = '';
+
+  if (!mesh || !mesh.textures || mesh.textures.length === 0) {
+    const opt = document.createElement("option");
+    opt.textContent = "-- Aucune texture --";
+    textureSelect.appendChild(opt);
+    return;
+  }
+
+  mesh.textures.forEach((tex, i) => {
+    const opt = document.createElement("option");
+    opt.value = tex.path;
+    opt.textContent = tex.name;
+    textureSelect.appendChild(opt);
+  });
+
+  textureSelect.selectedIndex = 0;
+  textureSelect.dispatchEvent(new Event('change'));
+  
+}
+
 
 function setupVisualizationSection() {
   const colormapSelect = document.getElementById('colormap-select');
   const meshSelect = document.getElementById('mesh-list');
+
+  document.getElementById("mesh-list")?.addEventListener("change", (e) => {
+  const selectedPath = e.target.value;
+  const selectedMesh = meshes.find(m => m.path === selectedPath);
+  updateTextureListForSelectedMesh(selectedMesh);
+  });
 
   colormapSelect.addEventListener('change', () => {
     currentColormap = colormapSelect.value;
