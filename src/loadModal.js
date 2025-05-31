@@ -1,156 +1,131 @@
 import { showStatus } from './utils.js';
 
 export function initLoadModal(meshesRef) {
-  // DOM Elements
   const modal = document.getElementById('load-modal');
   const openBtn = document.getElementById('open-load-modal');
   const closeBtn = document.getElementById('cancel-load');
-
-  const loadDatabaseBtn = document.getElementById('load-database');  // Nouveau bouton pour générer la base de données
-
+  const loadSelectedBtn = document.getElementById('load-selected');
+  const selectAllBtn = document.getElementById('select-all');
+  const deleteBtn = document.getElementById('delete-selected');
   const dbList = document.getElementById('mesh-db-list');
-  let database = [];  // Base de données des fichiers (maillages et textures)
 
-  // -----------------------------------
-  // Ouverture et fermeture de la modale
-  openBtn?.addEventListener('click', () => modal.classList.remove('hidden'));
-  closeBtn?.addEventListener('click', () => modal.classList.add('hidden'));
-
-  // -----------------------------------
-  // Sélectionner un dossier pour les maillages
   const folderPathInput = document.getElementById('selected-folder-path');
   const folderTrigger = document.getElementById('select-folder');
   const filterInput = document.getElementById('folder-filter');
   const filterBtn = document.getElementById('filter-folder-files');
   const folderFileList = document.getElementById('folder-file-list');
   const addFolderBtn = document.getElementById('add-folder-to-db');
-  const loadSelectedBtn = document.getElementById('load-selected');
-  const selectAllBtn = document.getElementById('select-all-folder-files');
-  const deleteBtn = document.getElementById('delete-selected');
+  const selectAllFolderBtn = document.getElementById('select-all-folder-files');
 
+  let database = [];
   let folderFiles = [];
   let selectedFolder = '';
 
+  openBtn?.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+  });
+
+  closeBtn?.addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+
   folderTrigger?.addEventListener('click', handleFolderSelection);
-  filterBtn?.addEventListener('click', handleFilterFiles);
-  addFolderBtn?.addEventListener('click', handleAddFolderToDatabase);
+  filterBtn?.addEventListener('click', filterFolderFiles);
+  addFolderBtn?.addEventListener('click', addSelectedFilesToDatabase);
+
+  selectAllFolderBtn?.addEventListener('click', () => {
+    folderFileList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+  });
 
   selectAllBtn?.addEventListener('click', () => {
-    folderFileList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);  // Sélectionner toutes les cases
+    dbList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
   });
 
-  // Ajouter le gestionnaire d'événements pour "Charger les fichiers sélectionnés"
-    loadSelectedBtn?.addEventListener("click", async () => {
-  // Récupérer les fichiers sélectionnés dans la base de données
-  const selected = database.filter((_, i) =>
-    dbList.querySelector(`input[data-index="${i}"]`)?.checked
-  );
-
-  if (selected.length === 0) {
-    showStatus("Aucun fichier sélectionné", true);
-    return;
-  }
-
-  // Mise à jour de la variable global meshRef
-  meshesRef.length = 0;
-  selected.forEach(file => {
-    meshesRef.push({
-      id : file.name,
-      name : file.name,
-      path: file.path,
-      texture : []
-    })
-  })
-
-  // Mise à jour de la liste déroulante des maillages dans Visualisation
-  const meshListVis = document.getElementById("mesh-list");
-  meshListVis.innerHTML = ""; // Vider la liste actuelle
-
-  selected.forEach(file => {
-    const option = document.createElement("option");
-    option.value = file.path;  // ou `file.name` si tu veux juste un nom
-    const fileName = file.name.replace(/\.json$/, "").replace(/\.[^/.]+$/, ""); // Nettoyage
-    option.textContent = fileName;
-    meshListVis.appendChild(option);
-  });
-
-  const firstOption = meshListVis.options[0];
-  if (firstOption) {
-    meshListVis.value = firstOption.value;
-    meshListVis.dispatchEvent(new Event("change"));
-  }
-
-  modal.classList.add("hidden");
-  showStatus(`${selected.length} maillage(s) sélectionné(s) avec succès`);
-
-});
-
-  // Ajoute un événement pour sélectionner tout dans la base de données
-  document.getElementById('select-all')?.addEventListener('click', () => {
-    dbList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);  // Sélectionner toutes les cases de la base de données
-  });
-    // Bouton : Supprimer les fichiers sélectionnés de la DB
   deleteBtn?.addEventListener('click', () => {
-  const toDelete = Array.from(dbList.querySelectorAll('input:checked'))
-    .map(cb => parseInt(cb.dataset.index));
+    const toDelete = Array.from(dbList.querySelectorAll('input:checked'))
+      .map(cb => parseInt(cb.dataset.index));
 
-  if (toDelete.length === 0) {
-    showStatus("Aucun fichier à supprimer", true);
-    return;
-  }
-
-  database = database.filter((_, i) => !toDelete.includes(i));
-  updateDbList();
-  showStatus(`${toDelete.length} supprimé(s)`);
-});
-
-  // -----------------------------------
-  // Fonction pour ouvrir le dossier
-  function handleFolderSelection() {
-    const folderPath = folderPathInput.value.trim();
-    if (!folderPath) {
-      showStatus("Veuillez saisir un chemin de dossier", true);
+    if (toDelete.length === 0) {
+      showStatus("Aucun fichier à supprimer", true);
       return;
     }
 
-    fetchFolderFiles(folderPath);
-  }
+    database = database.filter((_, i) => !toDelete.includes(i));
+    updateDbList();
+    showStatus(`${toDelete.length} supprimé(s)`);
+  });
 
-  // Fonction pour récupérer les fichiers du dossier
-  async function fetchFolderFiles(folderPath) {
+  loadSelectedBtn?.addEventListener("click", () => {
+    const selected = database.filter((_, i) =>
+      dbList.querySelector(`input[data-index="${i}"]`)?.checked
+    );
+
+    if (selected.length === 0) {
+      showStatus("Aucun fichier sélectionné", true);
+      return;
+    }
+
+    meshesRef.length = 0;
+    selected.forEach(file => {
+      meshesRef.push({
+        id: file.name,
+        name: file.name,
+        path: file.path,
+        textures: []
+      });
+    });
+
+    const meshListVis = document.getElementById("mesh-list");
+    meshListVis.innerHTML = "";
+
+    selected.forEach(file => {
+      const option = document.createElement("option");
+      option.value = file.path;
+      option.textContent = file.name.replace(/\.json$/, '').replace(/\.[^/.]+$/, '');
+      meshListVis.appendChild(option);
+    });
+
+    const firstOption = meshListVis.options[0];
+    if (firstOption) {
+      meshListVis.value = firstOption.value;
+      meshListVis.dispatchEvent(new Event("change"));
+    }
+
+    modal.classList.add("hidden");
+    showStatus(`${selected.length} maillage(s) sélectionné(s) avec succès`);
+  });
+
+  async function handleFolderSelection() {
+    const path = folderPathInput.value.trim();
+    if (!path) return showStatus("Veuillez saisir un chemin de dossier", true);
+
     try {
       const res = await fetch("http://localhost:8000/api/list-folder-files", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: folderPath })
+        body: JSON.stringify({ path })
       });
 
       const data = await res.json();
-      if (res.ok) {
-        folderFiles = data.files;
-        selectedFolder = folderPath;
-        renderFolderFileList(folderFiles);
-        showStatus(`${folderFiles.length} fichier(s) trouvés`);
-      } else {
-        showStatus(data.error || "Erreur inconnue", true);
-      }
+      if (!res.ok) return showStatus(data.error || "Erreur inconnue", true);
+
+      folderFiles = data.files;
+      selectedFolder = path;
+      renderFolderFileList(folderFiles);
+      showStatus(`${folderFiles.length} fichier(s) trouvé(s)`);
     } catch (err) {
-      showStatus("Erreur réseau", true);
       console.error(err);
+      showStatus("Erreur réseau", true);
     }
   }
 
-  // -----------------------------------
-  // Filtrer les fichiers dans le dossier
-  function handleFilterFiles() {
+  function filterFolderFiles() {
     const keyword = filterInput.value.trim().toLowerCase();
     const filtered = folderFiles.filter(f => f.toLowerCase().includes(keyword));
     renderFolderFileList(filtered);
   }
 
-  // -----------------------------------
-  // Ajouter des fichiers à la base de données
-  function handleAddFolderToDatabase() {
+  function addSelectedFilesToDatabase() {
     const checked = Array.from(folderFileList.querySelectorAll('li input:checked'))
       .map(input => input.dataset.filename);
 
@@ -166,22 +141,15 @@ export function initLoadModal(meshesRef) {
     folderPathInput.value = '';
   }
 
-  // -----------------------------------
-  // Mise à jour de la liste des fichiers dans la base de données
   function updateDbList() {
     dbList.innerHTML = '';
     database.forEach((entry, i) => {
       const li = document.createElement('li');
-      li.innerHTML = `
-        <span>${entry.name}</span>
-        <input type="checkbox" data-index="${i}" />
-      `;
+      li.innerHTML = `<span>${entry.name}</span><input type="checkbox" data-index="${i}" />`;
       dbList.appendChild(li);
     });
   }
 
-  // -----------------------------------
-  // Afficher les fichiers dans la liste
   function renderFolderFileList(files) {
     folderFileList.innerHTML = '';
     files.forEach(f => {
