@@ -133,27 +133,28 @@ export function setWireframe(mesh, enabled) {
 }
 
 
+let wireframeLines = null;
+let wireframeMaterial = null;
+
 export function toggleEdges(mesh, scene, enabled, options = {}) {
   if (enabled) {
-    if (!edgeLines) {
-      const edges = new THREE.EdgesGeometry(mesh.geometry);
-      edgeMaterial = new THREE.LineBasicMaterial({
-        color: options.color || 0xffffff,
-        linewidth: options.linewidth || 1
+    if (!wireframeLines) {
+      const wire = new THREE.WireframeGeometry(mesh.geometry);
+      wireframeMaterial = new THREE.LineBasicMaterial({
+        color: options.color || 0xffffff
       });
-      edgeLines = new THREE.LineSegments(edges, edgeMaterial);
-      mesh.add(edgeLines);
+      wireframeLines = new THREE.LineSegments(wire, wireframeMaterial);
+      mesh.add(wireframeLines);
     }
 
-    // mise à jour dynamique
-    if (options.color) edgeMaterial.color.set(options.color);
-    if (options.linewidth !== undefined) edgeMaterial.linewidth = options.linewidth;
+    if (options.color) wireframeMaterial.color.set(options.color);
 
-    edgeLines.visible = true;
-  } else if (edgeLines) {
-    edgeLines.visible = false;
+    wireframeLines.visible = true;
+  } else if (wireframeLines) {
+    wireframeLines.visible = false;
   }
 }
+
 
 /**
  * Lance la boucle d'animation

@@ -1,5 +1,5 @@
 // main.js
-import { setupScene, startRenderingLoop, createMesh } from './viewer.js';
+import { setupScene, startRenderingLoop, createMesh, setWireframe, toggleEdges } from './viewer.js';
 import { applyColormap, getColormapType } from './colormap.js';
 import { initColormapEditor } from './colormapEditor.js';
 import { initLoadModal } from './loadModal.js';
@@ -51,6 +51,9 @@ function bindUIEvents() {
   bindMeshSelection();
   bindTextureSelection();
   bindColormapSelection();
+  bindColormapRangeControls();
+  bindWireframeToggle();
+  bindEdgeToggle();
 }
 
 function setupAccordion() {
@@ -143,16 +146,75 @@ function bindTextureSelection() {
 
 function bindColormapSelection() {
   const colormapSelect = document.getElementById('colormap-select');
+  const minInput = document.getElementById('min-val');
+  const maxInput = document.getElementById('max-val');
 
   colormapSelect?.addEventListener('change', () => {
     currentColormap = colormapSelect.value;
     if (!currentMesh) return;
+
     const scalars = currentMesh.userData?.scalars || [];
-    updateMeshColors(currentMesh, scalars, currentColormap, scalarMin, scalarMax);
-    updateColorbar(scalarMin, scalarMax, currentColormap);
-    drawHistogram(scalars, currentColormap);
+    const minVal = parseFloat(minInput.value);
+    const maxVal = parseFloat(maxInput.value);
+
+    if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) {
+      updateMeshColors(currentMesh, scalars, currentColormap, minVal, maxVal);
+      updateColorbar(minVal, maxVal, currentColormap);
+      drawHistogram(scalars, currentColormap, minVal, maxVal);
+    }
   });
 }
+
+
+function bindWireframeToggle() {
+  const wireframeToggle = document.getElementById('wireframe');
+  const edgeToggle = document.getElementById('edges-toggle');
+  if (!wireframeToggle || !edgeToggle) return;
+
+  wireframeToggle.addEventListener('change', () => {
+    if (!currentMesh) return;
+
+    const enabled = wireframeToggle.checked;
+    setWireframe(currentMesh, enabled);
+
+    if (enabled && edgeToggle.checked) {
+      edgeToggle.checked = false;
+      toggleEdges(currentMesh, scene, false);
+    }
+  });
+}
+
+
+
+function bindEdgeToggle() {
+  const edgeToggle = document.getElementById('edges-toggle');
+  const edgeColor = document.getElementById('edge-color');
+  const wireframeToggle = document.getElementById('wireframe');
+
+  if (!edgeToggle || !edgeColor || !wireframeToggle) return;
+
+  const updateEdges = () => {
+    if (!currentMesh) return;
+
+    const options = {
+      color: edgeColor.value
+    };
+
+    const enabled = edgeToggle.checked;
+    toggleEdges(currentMesh, scene, enabled, options);
+
+    if (enabled && wireframeToggle.checked) {
+      wireframeToggle.checked = false;
+      setWireframe(currentMesh, false);
+    }
+  };
+
+  edgeToggle.addEventListener('change', updateEdges);
+  edgeColor.addEventListener('input', updateEdges);
+}
+
+
+
 
 function updateTextureListForSelectedMesh(mesh) {
   const textureSelect = document.getElementById("texture-list");
@@ -229,18 +291,27 @@ function updateColorbar(min, max, cmap) {
   }
 }
 
-function drawHistogram(values, cmapName, min = scalarMin, max = scalarMax) {
+function drawHistogram(values, cmapName, dynamicMin = scalarMin, dynamicMax = scalarMax) {
   const nbins = 50;
-  const binWidth = (max - min) / nbins;
+  const trueMin = scalarMin;
+  const trueMax = scalarMax;
+  const binWidth = (trueMax - trueMin) / nbins;
   const bins = new Array(nbins).fill(0);
 
   values.forEach(v => {
-    const index = Math.floor((v - min) / binWidth);
+    const index = Math.floor((v - trueMin) / binWidth);
     if (index >= 0 && index < nbins) bins[index]++;
   });
 
-  const binCenters = bins.map((_, i) => min + binWidth * (i + 0.5));
-  const colorTriplets = applyColormap(binCenters.map(v => Math.min(Math.max(v, min), max)), cmapName, min, max);
+  const binCenters = bins.map((_, i) => trueMin + binWidth * (i + 0.5));
+
+  // Appliquer la colormap sur les couleurs selon la plage dynamique choisie
+  const colorTriplets = applyColormap(
+    binCenters.map(v => Math.min(Math.max(v, dynamicMin), dynamicMax)),
+    cmapName,
+    dynamicMin,
+    dynamicMax
+  );
 
   const colors = [];
   for (let i = 0; i < binCenters.length; i++) {
@@ -258,9 +329,56 @@ function drawHistogram(values, cmapName, min = scalarMin, max = scalarMax) {
     hoverinfo: 'x+y'
   }], {
     margin: { t: 10, r: 10, b: 40, l: 40 },
-    xaxis: { title: 'Valeur scalaire', range: [min, max] },
+    xaxis: { title: 'Valeur scalaire', range: [trueMin, trueMax] },
     yaxis: { title: 'Fréquence' },
     bargap: 0.05,
     showlegend: false
   }, { staticPlot: false });
+}
+
+
+function bindColormapRangeControls() {
+  const minInput = document.getElementById('min-val');
+  const maxInput = document.getElementById('max-val');
+  const applyBtn = document.getElementById('apply-range');
+  const colormapSelect = document.getElementById('colormap-select');
+
+  if (!minInput || !maxInput || !applyBtn || !colormapSelect) return;
+
+  applyBtn.addEventListener('click', () => {
+    const cmap = colormapSelect.value;
+    const minVal = parseFloat(minInput.value);
+    const maxVal = parseFloat(maxInput.value);
+
+    if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal && currentMesh) {
+      const scalars = currentMesh.userData?.scalars || [];
+
+      updateMeshColors(currentMesh, scalars, cmap, minVal, maxVal);
+      updateColorbar(minVal, maxVal, cmap);
+      drawHistogram(scalars, cmap, minVal, maxVal);
+    } else {
+      alert("Veuillez entrer un min et un max valides (min < max).");
+    }
+  });
+
+  // Initialise les champs si on a des valeurs
+  minInput.value = scalarMin.toFixed(2);
+  maxInput.value = scalarMax.toFixed(2);
+
+  const resetBtn = document.getElementById('reset-range');
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (!currentMesh) return;
+      const scalars = currentMesh.userData?.scalars || [];
+      const cmap = colormapSelect.value;
+
+      minInput.value = scalarMin.toFixed(2);
+      maxInput.value = scalarMax.toFixed(2);
+
+      updateMeshColors(currentMesh, scalars, cmap, scalarMin, scalarMax);
+      updateColorbar(scalarMin, scalarMax, cmap);
+      drawHistogram(scalars, cmap, scalarMin, scalarMax);
+    });
+  }
 }
