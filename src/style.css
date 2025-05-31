@@ -485,3 +485,140 @@ body {
   padding-left: 0;
   list-style: none;
 }
+
+
+/* ==== COLORMAP EDITOR MODAL ==== */
+#colormap-editor-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #222;
+  padding: 24px;
+  border-radius: 12px;
+  width: 480px;
+  max-width: 90vw;
+  color: white;
+}
+
+#colormap-editor-modal h2 {
+  margin: 0;
+  font-size: 18px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 6px;
+}
+
+.colormap-preview-wrapper {
+  position: relative;
+  width: 100%;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+#custom-colormap-preview {
+  display: block;
+  width: 100%;
+  height: 30px;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+#colormap-labels {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  width: 100%;
+  height: 18px;
+  font-size: 11px;
+  color: #ccc;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+#colormap-labels span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  text-shadow: 0 0 4px #000;
+}
+
+.range-editor,
+.color-editor,
+.name-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.range-editor label,
+.color-editor label,
+.name-editor label {
+  flex: 1;
+  font-size: 13px;
+  color: #ddd;
+}
+
+.range-editor input[type="number"],
+.color-editor input[type="color"],
+.name-editor input[type="text"] {
+  width: 100%;
+  padding: 6px;
+  background-color: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+#add-range-btn {
+  padding: 6px 12px;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+#add-range-btn:hover {
+  background-color: #666;
+}
+
+#custom-ranges-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.range-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.range-entry input[type="color"] {
+  width: 30px;
+  height: 24px;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.range-entry button {
+  background: none;
+  color: #ccc;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+}
+
+.range-entry button:hover {
+  color: red;
+}

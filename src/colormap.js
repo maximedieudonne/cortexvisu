@@ -17,7 +17,15 @@ export function registerColormap(name, steps, customFunc = null, type = 'continu
 }
 
 export function getColormapType(name) {
-  return colormapMeta[name]?.type || 'continuous';
+  if (colormapMeta[name]?.type) {
+    return colormapMeta[name].type;
+  }
+
+  if (localStorage.getItem('customColormap:' + name)) {
+    return 'discrete';
+  }
+
+  return 'continuous';
 }
 
 export function applyColormap(values, cmapName, customMin = null, customMax = null) {

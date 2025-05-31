@@ -267,10 +267,13 @@ function updateColorbar(min, max, cmap) {
   const ctx = canvas.getContext('2d');
   const h = canvas.height;
 
-  document.getElementById('colorbar-discrete-tick-lines').style.display = 'none';
-  document.getElementById('colorbar-tick-lines').style.display = 'flex';
+  const isDiscrete = getColormapType(cmap) === 'discrete';
+  document.getElementById('colorbar-discrete-tick-lines').style.display = isDiscrete ? 'block' : 'none';
+  document.getElementById('colorbar-tick-lines').style.display = isDiscrete ? 'none' : 'flex';
 
-  if (getColormapType(cmap) === 'discrete') return;
+  if (isDiscrete) {
+    return updateColorbarDiscrete(cmap, min, max);
+  }
 
   for (let y = 0; y < h; y++) {
     const t = y / h;
@@ -290,6 +293,41 @@ function updateColorbar(min, max, cmap) {
     ticksContainer.appendChild(tick);
   }
 }
+
+function updateColorbarDiscrete(cmapName, min, max) {
+  const canvas = document.getElementById('colorbar-canvas');
+  const ctx = canvas.getContext('2d');
+  const h = canvas.height;
+  const ranges = JSON.parse(localStorage.getItem('customColormap:' + cmapName));
+  if (!ranges) return;
+
+  for (const r of ranges) {
+    const yStart = h * (1 - (r.max - min) / (max - min));
+    const yEnd = h * (1 - (r.min - min) / (max - min));
+    ctx.fillStyle = r.color;
+    ctx.fillRect(0, yStart, canvas.width, yEnd - yStart);
+  }
+
+  const tickContainer = document.getElementById('colorbar-discrete-tick-lines');
+  tickContainer.innerHTML = '';
+
+  const seen = new Set();
+  for (const r of ranges) {
+    [r.min, r.max].forEach(val => {
+      if (!seen.has(val)) {
+        const y = h * (1 - (val - min) / (max - min));
+        const tick = document.createElement('div');
+        tick.className = 'colorbar-tick';
+        tick.style.top = `${y}px`;
+        tick.innerHTML = `<span>${val.toFixed(2)}</span>`;
+        tickContainer.appendChild(tick);
+        seen.add(val);
+      }
+    });
+  }
+}
+
+
 
 function drawHistogram(values, cmapName, dynamicMin = scalarMin, dynamicMax = scalarMax) {
   const nbins = 50;
