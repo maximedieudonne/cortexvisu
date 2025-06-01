@@ -1,29 +1,56 @@
 # launch_app.py
+
 import subprocess
 import webbrowser
 import time
 import sys
-print("Compilation du frontend...")
-vite_build = subprocess.run("npm run build", shell=True)
-if vite_build.returncode != 0:
-    print("Échec du build Vite. Vérifie ton frontend.")
-    exit(1)
+from pathlib import Path
 
-print("Lancement du backend (FastAPI, sert aussi le frontend)...")
+# Configurations
+FRONTEND_DIST = Path("dist")
+BACKEND_ENTRY = "tools.api:app"
+PORT = 8000
+URL = f"http://localhost:{PORT}"
+REBUILD_FLAG = "--rebuild"
 
-server = subprocess.Popen(f'"{sys.executable}" -m uvicorn tools.api:app --port 8000', shell=True)
+# Vérifier si on force le rebuild
+force_rebuild = REBUILD_FLAG in sys.argv
 
+def build_frontend():
+    print("Compilation du frontend avec Vite...")
+    result = subprocess.run("npm run build", shell=True)
+    if result.returncode != 0:
+        print("Échec du build frontend. Vérifie ton code.")
+        sys.exit(1)
+    print("Frontend compilé avec succès.")
 
+def start_backend():
+    print("Lancement du backend FastAPI...")
+    return subprocess.Popen(
+        f'"{sys.executable}" -m uvicorn {BACKEND_ENTRY} --port {PORT}',
+        shell=True
+    )
 
-# Laisser le temps au serveur de démarrer
-time.sleep(2)
+def open_browser():
+    print(f"Ouverture dans le navigateur : {URL}")
+    webbrowser.open(URL)
 
-# Ouvrir automatiquement dans le navigateur
-webbrowser.open("http://localhost:8000")
+def main():
+    if force_rebuild or not FRONTEND_DIST.exists():
+        build_frontend()
+    else:
+        print("Build frontend déjà présent. Utilisation du cache.")
 
-try:
-    print("CortexVisu en cours d'exécution. Ctrl+C pour arrêter.")
-    server.wait()
-except KeyboardInterrupt:
-    print("Arrêt de l'application.")
-    server.terminate()
+    server_process = start_backend()
+    time.sleep(2)
+    open_browser()
+
+    try:
+        print(" CortexVisu en cours. Appuie sur Ctrl+C pour quitter.")
+        server_process.wait()
+    except KeyboardInterrupt:
+        print("\n Arrêt de l'application...")
+        server_process.terminate()
+
+if __name__ == "__main__":
+    main()

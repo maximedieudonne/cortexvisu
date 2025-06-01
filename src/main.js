@@ -109,15 +109,21 @@ function bindTextureSelection() {
       });
 
       const result = await res.json();
-      if (!result[0]?.json) throw new Error("Réponse backend invalide");
 
-      const textureJsonPath = `/public/textures/${result[0].json}`;
-      const jsonData = await (await fetch(textureJsonPath)).json();
+      const responseItem = result[0];
+      if (!responseItem || responseItem.error) {
+        throw new Error(responseItem?.error || "Réponse backend invalide");
+      }
 
-      const scalars = jsonData.scalars;
+      // On récupère les scalars du backend
+      const scalars = responseItem.scalars;
+      if (!scalars || !Array.isArray(scalars) || scalars.length === 0) {
+        console.error("Erreur : 'scalars' est vide ou non défini dans la texture.");
+        return;
+      }
+
       scalarMin = Math.min(...scalars);
       scalarMax = Math.max(...scalars);
-
       currentMesh.userData.scalars = scalars;
 
       updateMeshColors(currentMesh, scalars, currentColormap, scalarMin, scalarMax);
@@ -143,6 +149,7 @@ function bindTextureSelection() {
     }
   });
 }
+
 
 function bindColormapSelection() {
   const colormapSelect = document.getElementById('colormap-select');

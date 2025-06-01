@@ -84,20 +84,13 @@ async def upload_mesh(payload: dict = Body(...)):
 async def upload_texture(payload: dict = Body(...)):
     result = []
 
-    # Récupération des chemins des fichiers de texture
     texture_paths = payload.get("texture_paths", [])
-
     for texture_path in texture_paths:
-        # Extraction des scalars à partir du fichier de texture
         try:
             scalars = load_scalar_data(texture_path)
-            # Création du JSON pour chaque texture
-            json_path = TEXTURE_OUTPUT / f"{Path(texture_path).stem}.json"
-            json_path.write_text(json.dumps({"scalars": scalars}))
-
             result.append({
                 "texture_path": texture_path,
-                "json": json_path.name
+                "scalars": scalars  
             })
         except Exception as e:
             result.append({

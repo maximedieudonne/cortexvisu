@@ -73,3 +73,6 @@ linux : lancer dev.sh (apres avoir ajouter les droit d'execution chmod x...)
 npm run dev
 python -m uvicorn tools.api:app --reload --port 8000
 ```
+
+### mode user :
+D:/Callisto/repo/cortexvisu/.conda/python.exe d:/Callisto/repo/cortexvisu/launch_app.py
