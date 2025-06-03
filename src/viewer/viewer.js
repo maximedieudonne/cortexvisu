@@ -1,11 +1,12 @@
+// viewer/viewer.js
+
 import * as THREE from 'three';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
-
 import { applyColormap } from './colormap.js';
 
 let renderer, scene, camera, controls;
-let edgeLines = null;
-let edgeMaterial = null;
+let wireframeLines = null;
+let wireframeMaterial = null;
 
 /**
  * Initialise la scène, caméra, lumières, contrôles et renderer
@@ -22,12 +23,11 @@ export function setupScene() {
   initLights(scene);
   initResizeHandler(container, camera, renderer);
 
-  // expose une fonction pour changer le fond plus tard
   function setBackgroundColor(hexColor) {
     scene.background = new THREE.Color(hexColor);
   }
 
-  return { scene, camera, renderer, controls,setBackgroundColor };
+  return { scene, camera, renderer, controls, setBackgroundColor };
 }
 
 function initCamera(container) {
@@ -46,16 +46,14 @@ function initRenderer(container) {
 
 function initControls(cam, domElement) {
   const ctrl = new TrackballControls(cam, domElement);
-  ctrl.rotateSpeed = 2.0       
-  ctrl.zoomSpeed = 0.8         
-  ctrl.panSpeed = 0.3          
-  ctrl.dynamicDampingFactor = 0.2  
-  ctrl.staticMoving = true         
+  ctrl.rotateSpeed = 2.0;
+  ctrl.zoomSpeed = 0.8;
+  ctrl.panSpeed = 0.3;
+  ctrl.dynamicDampingFactor = 0.2;
+  ctrl.staticMoving = true;
   ctrl.noZoom = false;
-  ctrl.noPan = true;              
+  ctrl.noPan = true;
 
-
-  // toggle pan avec shift
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Shift') ctrl.noPan = false;
   });
@@ -83,9 +81,6 @@ function initResizeHandler(container, camera, renderer) {
   });
 }
 
-/**
- * Construit la géométrie centrée à partir des données JSON
- */
 export function buildGeometry(data) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.vertices.flat(), 3));
@@ -99,9 +94,6 @@ export function buildGeometry(data) {
   return geometry;
 }
 
-/**
- * Crée un mesh coloré par scalaires et colormap
- */
 export function createMesh(meshData, scalars = null, cmapName = 'viridis', min = null, max = null) {
   const geometry = buildGeometry(meshData);
 
@@ -111,7 +103,7 @@ export function createMesh(meshData, scalars = null, cmapName = 'viridis', min =
   }
 
   const material = new THREE.MeshStandardMaterial({
-    vertexColors: !!scalars, // true seulement si scalars présents
+    vertexColors: !!scalars,
     side: THREE.DoubleSide,
     roughness: 0.8,
     metalness: 0.1,
@@ -121,10 +113,6 @@ export function createMesh(meshData, scalars = null, cmapName = 'viridis', min =
   return new THREE.Mesh(geometry, material);
 }
 
-
-/**
- * Met à jour l'affichage wireframe du mesh
- */
 export function setWireframe(mesh, enabled) {
   if (mesh && mesh.material) {
     mesh.material.wireframe = enabled;
@@ -132,33 +120,32 @@ export function setWireframe(mesh, enabled) {
   }
 }
 
-
-let wireframeLines = null;
-let wireframeMaterial = null;
-
 export function toggleEdges(mesh, scene, enabled, options = {}) {
   if (enabled) {
-    if (!wireframeLines) {
+    if (!mesh.userData.edgeLines) {
       const wire = new THREE.WireframeGeometry(mesh.geometry);
-      wireframeMaterial = new THREE.LineBasicMaterial({
+      const material = new THREE.LineBasicMaterial({
         color: options.color || 0xffffff
       });
-      wireframeLines = new THREE.LineSegments(wire, wireframeMaterial);
-      mesh.add(wireframeLines);
+      const edgeLines = new THREE.LineSegments(wire, material);
+      mesh.userData.edgeLines = edgeLines;
+      mesh.add(edgeLines);
     }
 
-    if (options.color) wireframeMaterial.color.set(options.color);
+    // mettre à jour la couleur
+    const edgeLines = mesh.userData.edgeLines;
+    if (options.color) {
+      edgeLines.material.color.set(options.color);
+    }
 
-    wireframeLines.visible = true;
-  } else if (wireframeLines) {
-    wireframeLines.visible = false;
+    mesh.userData.edgeLines.visible = true;
+
+  } else if (mesh.userData.edgeLines) {
+    mesh.userData.edgeLines.visible = false;
   }
 }
 
 
-/**
- * Lance la boucle d'animation
- */
 export function startRenderingLoop(scene, camera) {
   const clock = new THREE.Clock();
 
@@ -168,5 +155,6 @@ export function startRenderingLoop(scene, camera) {
     controls.update(delta);
     renderer.render(scene, camera);
   }
+
   animate();
 }

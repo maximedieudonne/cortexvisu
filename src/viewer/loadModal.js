@@ -1,4 +1,4 @@
-import { showStatus } from './utils.js';
+import { showStatus } from '../utils/utils.js';
 
 export function initLoadModal(meshesRef) {
   const modal = document.getElementById('load-modal');
