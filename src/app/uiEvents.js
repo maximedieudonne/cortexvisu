@@ -7,6 +7,7 @@ import { bindColormapSelection } from './ui/colormapSelection.js';
 import { bindColormapRangeControls } from './ui/colormapRange.js';
 import { bindWireframeToggle } from './ui/wireframeToggle.js';
 import { bindEdgeToggle } from './ui/edgeToggle.js';
+import { bindImportPackage } from './ui/importPackage.js'
 
 export function bindUIEvents() {
   setupAccordion();
@@ -16,6 +17,7 @@ export function bindUIEvents() {
   bindColormapRangeControls();
   bindWireframeToggle();
   bindEdgeToggle();
+  bindImportPackage();
 }
 
 

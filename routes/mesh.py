@@ -3,12 +3,9 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from pathlib import Path
 from typing import List
-import uuid
-import os
-import json
+
 
 from tools.parser import load_mesh, load_scalar_data
-from tools.curvature import compute_curvature
 from tools.mesh_to_threejs_json import generate_threejs_json
 
 router = APIRouter()
