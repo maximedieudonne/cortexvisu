@@ -640,3 +640,20 @@ body {
 .package-btn:hover {
   background-color: #444;
 }
+
+/* ==== info pannel ==== */
+
+#info-section {
+  padding-top: 1rem;
+  font-size: 0.9em;
+}
+
+#info-display ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-bottom: 0.5rem;
+}
+
+#info-display li {
+  margin-bottom: 2px;
+}

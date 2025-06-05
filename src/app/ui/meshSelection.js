@@ -6,6 +6,7 @@ import {
   setCurrentMesh
 } from '../../utils/sceneState.js';
 import { toggleEdges } from '../../viewer/viewer.js';
+import { updateInfoPanel } from '../../utils/sceneState.js';
 
 export function bindMeshSelection() {
   const meshSelect = document.getElementById('mesh-list');
@@ -30,6 +31,14 @@ export function bindMeshSelection() {
       if (currentMesh) scene.remove(currentMesh);
 
       const newMesh = createMesh(meshData);
+
+      // Ajout des métadonnées
+      const selectedMesh = meshes.find(m => m.path === selectedPath);
+      newMesh.userData.meta = {
+        name: selectedMesh?.name || '',
+        path: selectedMesh?.path || ''
+      };
+
       scene.add(newMesh);
 
       const edgeToggle = document.getElementById('edges-toggle');
@@ -41,8 +50,15 @@ export function bindMeshSelection() {
 
       setCurrentMesh(newMesh);
 
-      const selectedMesh = meshes.find(m => m.path === selectedPath);
       updateTextureListForSelectedMesh(selectedMesh);
+
+      // Mise à jour du panneau d'informations
+      updateInfoPanel({
+        mesh: newMesh,
+        meshMeta: newMesh.userData.meta,
+        texture: null,
+        textureMeta: null
+      });
 
     } catch (error) {
       console.error("Erreur chargement mesh:", error);

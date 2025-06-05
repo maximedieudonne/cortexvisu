@@ -3,6 +3,7 @@ import { updateMeshColors, updateColorbar, drawHistogram } from '../coloring.js'
 import { showStatus } from '../../utils/utils.js';
 import { initColormapEditor } from '../../viewer/colormapEditor.js';
 import * as THREE from 'three';
+import { updateInfoPanel } from '../../utils/sceneState.js';
 
 export function bindTextureSelection() {
   const textureSelect = document.getElementById('texture-list');
@@ -57,6 +58,21 @@ export function bindTextureSelection() {
         } else {
           currentMesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
         }
+      });
+
+      // Crée les métadonnées de la texture
+      const textureMeta = {
+        name: selectedTexturePath.split('/').pop(),
+        path: selectedTexturePath,
+        scalars
+      };
+
+      // Appelle la mise à jour du panneau d’infos
+      updateInfoPanel({
+        mesh: currentMesh,
+        meshMeta: currentMesh.userData.meta,
+        texture: true,
+        textureMeta
       });
 
     } catch (err) {

@@ -72,8 +72,11 @@ async def list_folder_files(request: Request):
             return JSONResponse(status_code=400, content={"error": "Chemin invalide ou dossier introuvable."})
 
         all_files = []
+        ALLOWED_EXTENSIONS = {".gii"}
         for root, dirs, files in os.walk(folder_path):
             for file in files:
+                if Path(file).suffix.lower() not in ALLOWED_EXTENSIONS:
+                    continue
                 relative_path = os.path.relpath(os.path.join(root, file), start=folder_path)
                 all_files.append(relative_path)
 
