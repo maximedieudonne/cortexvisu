@@ -1,3 +1,6 @@
+
+import { getCurrentMeshPath } from '../../utils/sceneState.js';
+
 export function bindImportPackage() {
   document.getElementById("import-btn").addEventListener("click", async () => {
     const packageName = prompt("Nom du package à importer (ex: cortexanalyser)");
@@ -52,22 +55,35 @@ function showFunctionModal(functions) {
     const btn = document.createElement("button");
     btn.textContent = fn.label;
     btn.title = fn.description;
+
     btn.onclick = async () => {
-      const meshData = await fetch("/data.json").then(r => r.json());
+      const overlay = document.getElementById("loading-overlay");
+      overlay.classList.remove("hidden");
 
-      const res = await fetch(`/api/run-function/?name=${encodeURIComponent(fn.name)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(meshData)
-      });
+      try {
+        // Appel backend
+        const meshPath = getCurrentMeshPath(); 
+        const res = await fetch(`/api/run-function/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: fn.name, mesh_path: meshPath })
+        });
 
-      if (res.ok) {
-        const { result } = await res.json();
-        alert("Résultat : " + JSON.stringify(result));
-      } else {
-        alert("Erreur : " + (await res.text()));
+        if (!res.ok) {
+          const errText = await res.text();
+          alert("Erreur : " + errText);
+        } else {
+          const { result } = await res.json();
+          alert("Résultat : " + JSON.stringify(result));
+        }
+
+      } catch (err) {
+        alert("Erreur JS : " + err.message);
+      } finally {
+        overlay.classList.add("hidden");
       }
     };
+
     actionContainer.appendChild(btn);
   });
 
@@ -78,3 +94,4 @@ function showFunctionModal(functions) {
 
   document.body.appendChild(modal);
 }
+
