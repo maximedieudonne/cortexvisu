@@ -110,7 +110,14 @@ export function createMesh(meshData, scalars = null, cmapName = 'viridis', min =
     wireframe: false
   });
 
-  return new THREE.Mesh(geometry, material);
+  const mesh = new THREE.Mesh(geometry, material);
+
+  // Ajout des métadonnées (si disponibles)
+  if (meshData.id) mesh.userData.id = meshData.id;
+  if (meshData.name) mesh.userData.name = meshData.name;
+  if (meshData.path) mesh.userData.path = meshData.path;
+
+  return mesh;
 }
 
 export function setWireframe(mesh, enabled) {

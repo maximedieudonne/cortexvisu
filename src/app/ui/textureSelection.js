@@ -4,6 +4,7 @@ import { showStatus } from '../../utils/utils.js';
 import { initColormapEditor } from '../../viewer/colormapEditor.js';
 import * as THREE from 'three';
 import { updateInfoPanel } from '../../utils/sceneState.js';
+import { setCurrentTextureMeta } from '../../utils/sceneState.js';
 
 export function bindTextureSelection() {
   const textureSelect = document.getElementById('texture-list');
@@ -40,6 +41,12 @@ export function bindTextureSelection() {
       const scalarMax = Math.max(...scalars);
       setScalarMinMax(scalarMin, scalarMax);
       currentMesh.userData.scalars = scalars;
+
+      setCurrentTextureMeta({
+      path: selectedTexturePath,
+      name: responseItem.texture_path?.split(/[\\/]/).pop(), // nom du fichier
+      scalars
+      });
 
       const currentColormap = getCurrentColormap();
 

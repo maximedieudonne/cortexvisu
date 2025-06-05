@@ -7,6 +7,9 @@ let currentMesh = null;
 let scalarMin = 0;
 let scalarMax = 1;
 let currentColormap = 'viridis';
+let currentTextureMeta = null;
+
+
 
 export function updateSceneState({ scene: s, camera: c }) {
   if (s) scene = s;
@@ -56,7 +59,7 @@ export function getCurrentColormap() {
 
 
 
-export function updateInfoPanel({ mesh, meshMeta, texture, textureMeta }) {
+export function updateInfoPanel({ mesh, meshMeta, texture = null, textureMeta = null }) {
   const meshInfo = document.getElementById('mesh-info');
   const textureInfo = document.getElementById('texture-info');
 
@@ -72,17 +75,39 @@ export function updateInfoPanel({ mesh, meshMeta, texture, textureMeta }) {
     `;
   }
 
-  if (texture && textureMeta) {
-    const min = Math.min(...textureMeta.scalars);
-    const max = Math.max(...textureMeta.scalars);
-    const mean = (textureMeta.scalars.reduce((a, b) => a + b, 0) / textureMeta.scalars.length).toFixed(3);
+  // Si textureMeta n’est pas passé, on prend celui du state global
+  const meta = textureMeta || getCurrentTextureMeta();
+
+  if (texture && meta) {
+    const min = Math.min(...meta.scalars);
+    const max = Math.max(...meta.scalars);
+    const mean = (meta.scalars.reduce((a, b) => a + b, 0) / meta.scalars.length).toFixed(3);
 
     textureInfo.innerHTML = `
-      <li><b>Nom :</b> ${textureMeta.name}</li>
-      <li><b>Chemin :</b> ${textureMeta.path}</li>
+      <li><b>Nom :</b> ${meta.name}</li>
+      <li><b>Chemin :</b> ${meta.path}</li>
       <li><b>Min :</b> ${min.toFixed(3)}</li>
       <li><b>Max :</b> ${max.toFixed(3)}</li>
       <li><b>Moyenne :</b> ${mean}</li>
     `;
   }
+}
+
+
+
+export function getCurrentMeshPath() {
+  const mesh = getCurrentMesh();
+  const all = getMeshes();
+
+  const match = all.find(m => m.id === mesh?.userData?.id);
+  return match?.path || null;
+}
+
+
+export function setCurrentTextureMeta(meta) {
+  currentTextureMeta = meta;
+}
+
+export function getCurrentTextureMeta() {
+  return currentTextureMeta;
 }

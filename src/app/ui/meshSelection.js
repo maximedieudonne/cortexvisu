@@ -30,27 +30,28 @@ export function bindMeshSelection() {
       const currentMesh = getCurrentMesh();
       if (currentMesh) scene.remove(currentMesh);
 
-      const newMesh = createMesh(meshData);
 
       // Ajout des métadonnées
       const selectedMesh = meshes.find(m => m.path === selectedPath);
-      newMesh.userData.meta = {
-        name: selectedMesh?.name || '',
-        path: selectedMesh?.path || ''
+      const enrichedMeshData = {
+        ...meshData,
+        id: selectedMesh?.id,
+        name: selectedMesh?.name,
+        path: selectedMesh?.path
       };
 
+      const newMesh = createMesh(enrichedMeshData);
+      newMesh.userData.meta = selectedMesh; 
       scene.add(newMesh);
 
+      // Réinitialise les arêtes
       const edgeToggle = document.getElementById('edges-toggle');
-      if (edgeToggle) {
-      edgeToggle.checked = false; 
-        }
+      if (edgeToggle) edgeToggle.checked = false;
 
       toggleEdges(newMesh, scene, false);
-
       setCurrentMesh(newMesh);
-
       updateTextureListForSelectedMesh(selectedMesh);
+
 
       // Mise à jour du panneau d'informations
       updateInfoPanel({
