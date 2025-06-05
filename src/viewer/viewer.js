@@ -113,10 +113,11 @@ export function createMesh(meshData, scalars = null, cmapName = 'viridis', min =
   const mesh = new THREE.Mesh(geometry, material);
 
   // Ajout des métadonnées (si disponibles)
-  if (meshData.id) mesh.userData.id = meshData.id;
-  if (meshData.name) mesh.userData.name = meshData.name;
-  if (meshData.path) mesh.userData.path = meshData.path;
-
+  mesh.userData.meta = {
+  id: meshData.id || null,
+  name: meshData.name || '',
+  path: meshData.path || ''
+  };
   return mesh;
 }
 

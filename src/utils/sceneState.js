@@ -97,9 +97,11 @@ export function updateInfoPanel({ mesh, meshMeta, texture = null, textureMeta = 
 
 export function getCurrentMeshPath() {
   const mesh = getCurrentMesh();
-  const all = getMeshes();
+  const id = mesh?.userData?.meta?.id;
+  if (!id) return null;
 
-  const match = all.find(m => m.id === mesh?.userData?.id);
+  const all = getMeshes();
+  const match = all.find(m => m.id === id);
   return match?.path || null;
 }
 
@@ -110,4 +112,14 @@ export function setCurrentTextureMeta(meta) {
 
 export function getCurrentTextureMeta() {
   return currentTextureMeta;
+}
+
+export function getCurrentMeshId() {
+  const mesh = getCurrentMesh();
+  return mesh?.userData?.meta?.id || null;
+}
+
+export function getCurrentTexturePath() {
+  const texture = getCurrentTextureMeta();
+  return texture?.path || null;
 }
