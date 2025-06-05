@@ -75,4 +75,4 @@ python -m uvicorn tools.api:app --reload --port 8000
 ```
 
 ### mode user :
-D:/Callisto/repo/cortexvisu/.conda/python.exe d:/Callisto/repo/cortexvisu/launch_app.py
+D:/Callisto/repo/cortexvisu/.conda/python.exe d:/Callisto/repo/cortexvisu/launch_app.py --rebuild

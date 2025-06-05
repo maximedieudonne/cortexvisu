@@ -32,7 +32,7 @@ function createPackageButton(packageName, functions) {
 
   const btn = document.createElement("button");
   btn.id = `btn-${packageName}`;
-  btn.textContent = `📦 ${packageName}`;
+  btn.textContent = `${packageName}`;
   btn.classList.add("package-btn");
   btn.onclick = () => showFunctionModal(functions);
 
