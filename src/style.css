@@ -694,3 +694,70 @@ body {
 .hidden {
   display: none !important;
 }
+
+
+/* === Extension : styles pour la modale des normales (normal-modal) === */
+
+#normal-modal .modal-content {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 1000px;
+  max-width: 95vw;
+  background: #222;
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+  position: relative;
+}
+
+#normal-modal .modal-content > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#normal-modal h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 4px;
+}
+
+#normal-modal button {
+  padding: 8px 12px;
+  background-color: #333;
+  border: none;
+  color: white;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#normal-modal button:hover {
+  background-color: #555;
+}
+
+#normal-modal input[type="text"] {
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background-color: #2a2a2a;
+  color: white;
+  font-size: 13px;
+  width: 100%;
+}
+
+#normal-modal .file-list-display {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #444;
+  border-radius: 4px;
+  margin: 8px 0;
+  padding-left: 0;
+  list-style: none;
+}

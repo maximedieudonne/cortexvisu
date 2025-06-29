@@ -19,6 +19,7 @@
         <div class="accordion-content">
           <button id="open-load-modal">Charger maillages</button>
           <button id="open-texture-modal">Charger textures</button>
+          <button id="open-normal-modal">Charger normales</button>
         </div>
       </div>
 
@@ -31,7 +32,11 @@
           
           <label for="texture-list">Texture :</label>
           <select id="texture-list"></select>
-          
+
+          <label for="normal-list">Normals :</label>
+          <select id="normal-list"></select>
+          <label><input type="checkbox" id="normals-toggle" checked /> Afficher normales</label>
+
           <label for="colormap-select">Colormap :</label>
           <select id="colormap-select">
             <option value="viridis" selected>viridis</option>
@@ -183,6 +188,46 @@
       <div class="modal-actions">
         <button id="delete-selected-textures">Supprimer</button>
         <button id="load-textures-button">Charger</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale normals -->
+<div id="normal-modal" class="modal hidden">
+  <div class="modal-content texture-grid">
+    <button id="cancel-normal-load" style="align-self: flex-end;">✖</button>
+
+    <!-- Colonne gauche : Import dossier -->
+    <div>
+      <h4>Normals : Dossier</h4>
+      <input type="text" id="normal-folder-path" placeholder="Chemin du dossier" />
+      <button id="browse-normal-folder">Sélectionner un dossier</button>
+
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <input type="text" id="normal-folder-filter" placeholder=".csv" />
+        <button id="filter-normal-folder">Filtrer</button>
+      </div>
+
+      <ul id="normal-folder-list" class="file-list-display checkbox-list"></ul>
+      <button id="add-normal-to-db">Ajouter à la base de données</button>
+      <button id="select-all-normals">Tout sélectionner</button>
+    </div>
+
+    <!-- Colonne centre : Liste des maillages chargés -->
+    <div>
+      <h4>Maillages chargés</h4>
+      <ul id="loaded-mesh-list-normals" class="file-list-display"></ul>
+    </div>
+
+    <!-- Colonne droite : Liste normales sélectionnées -->
+    <div>
+      <h4>Normals sélectionnés</h4>
+      <ul id="normal-db-list" class="file-list-display checkbox-list"></ul>
+
+      <div class="modal-actions">
+        <button id="delete-selected-normals">Supprimer</button>
+        <button id="load-normals-button">Charger</button>
       </div>
     </div>
   </div>
