@@ -5,6 +5,7 @@ from pathlib import Path
 
 from routes import mesh, texture, folders, db_generation, compute_curvature, import_package
 from routes import normals
+from routes import assets
 
 app = FastAPI()
 
@@ -20,6 +21,7 @@ app.add_middleware(
 app.include_router(mesh.router, prefix="/api")
 app.include_router(texture.router, prefix="/api")
 app.include_router(normals.router,  prefix="/api")
+app.include_router(assets.router, prefix="/api")
 app.include_router(folders.router, prefix="/api")
 app.include_router(db_generation.router, prefix="/api")
 app.include_router(compute_curvature.router, prefix="/api")
@@ -27,7 +29,4 @@ app.include_router(import_package.router, prefix="/api")
 
 # Serve frontend static files
 app.mount("/", StaticFiles(directory=Path("dist"), html=True), name="static")
-
-
-
 

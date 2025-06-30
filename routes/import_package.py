@@ -17,7 +17,7 @@ current_package: str = None
 def import_package(payload: PackageRequest):
     global imported_functions, current_package
     try:
-        print(">>> Reçu :", payload.package_name)  # 🧪 log console
+        print(">>> Reçu :", payload.package_name)  # log console
 
         package_name = payload.package_name
         registry = importlib.import_module(f"{package_name}.api_registry")

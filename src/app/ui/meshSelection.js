@@ -12,6 +12,7 @@ import {
 import { toggleEdges } from '../../viewer/viewer.js';
 import { updateInfoPanel } from '../../utils/sceneState.js';
 import { applyNormalsToMesh } from '../../viewer/utilsNormals.js';
+import { refreshMeshAssets } from '../../utils/refreshMeshAssets.js';
 
 // -----------------------------------------------------------------------------
 // API publique : initialisation des listeners des listes déroulantes
@@ -24,7 +25,7 @@ export function bindMeshSelection() {
   const meshes = getMeshes();
 
   // ---------------------------------------------------------------------------
-  // ⬇️ Changement de maillage ---------------------------------------------------
+  // Changement de maillage ---------------------------------------------------
   meshSelect?.addEventListener('change', async () => {
     const selectedPath = meshSelect.value;
     if (!selectedPath) return;
@@ -67,8 +68,8 @@ export function bindMeshSelection() {
 
       // 5. Met à jour l’état global
       setCurrentMesh(newMesh);
+      await refreshMeshAssets(newMesh.userData.meta);
       updateTextureListForSelectedMesh(selectedMesh);
-      updateNormalListForSelectedMesh(selectedMesh);
 
       // 6. Panneau d’informations
       updateInfoPanel({
