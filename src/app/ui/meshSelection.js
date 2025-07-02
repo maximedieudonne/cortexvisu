@@ -84,7 +84,7 @@ export function bindMeshSelection() {
   });
 
   // ---------------------------------------------------------------------------
-  // ⬇️ Changement de fichier CSV de normales -----------------------------------
+  //  Changement de fichier CSV de normales -----------------------------------
   normalSelect?.addEventListener('change', () => {
     const csvPath = normalSelect.value;
     if (!csvPath) return;
@@ -97,47 +97,75 @@ export function bindMeshSelection() {
 }
 
 // -----------------------------------------------------------------------------
-// FONCTIONS UTILITAIRES : mise à jour des listes déroulantes
+// Helpers : reconstruisent les listes « Texture » et « Normals » du mesh courant
 // -----------------------------------------------------------------------------
 
-export function updateTextureListForSelectedMesh(mesh) {
-  const textureSelect = document.getElementById('texture-list');
-  if (!textureSelect) return;
+/**
+ * Renvoie un libellé lisible : d’abord .name ou .label, sinon basename(path).
+ */
+const labelOf = asset => {
+  if (typeof asset === 'string') return asset.split(/[\\/]/).pop();
+  return asset.name || asset.label || (asset.path || '').split(/[\\/]/).pop();
+};
 
-  textureSelect.innerHTML = '';
-  if (!mesh?.textures?.length) {
-    textureSelect.innerHTML = '<option>-- Aucune texture --</option>';
+/**
+ * Remplit #texture-list à partir de meta.textures (array d’obj ou strings).
+ * Conserve la sélection si elle existe encore.
+ */
+export function updateTextureListForSelectedMesh(meta) {
+  const sel = document.getElementById('texture-list');
+  if (!sel) return;
+
+  const prev = sel.value;             // mémorise la sélection courante
+  sel.innerHTML = '';
+
+  const textures = meta?.textures || [];
+  if (!textures.length) {
+    sel.innerHTML = '<option>-- Aucune texture --</option>';
+    sel.dispatchEvent(new Event('change'));
     return;
   }
 
-  mesh.textures.forEach(tex => {
+  textures.forEach(tex => {
     const opt = document.createElement('option');
-    opt.value = tex.path;
-    opt.textContent = tex.name;
-    textureSelect.appendChild(opt);
+    opt.value = typeof tex === 'string' ? tex : tex.path;
+    opt.textContent = labelOf(tex);
+    sel.appendChild(opt);
   });
 
-  textureSelect.selectedIndex = 0;
-  textureSelect.dispatchEvent(new Event('change'));
+  // restaure la sélection si possible, sinon première valeur
+  sel.value = textures.some(tex =>
+              (typeof tex === 'string' ? tex : tex.path) === prev) ? prev : sel.options[0].value;
+  sel.dispatchEvent(new Event('change'));
 }
 
-export function updateNormalListForSelectedMesh(mesh) {
-  const normalSelect = document.getElementById('normal-list');
-  if (!normalSelect) return;
+/**
+ * Remplit #normal-list à partir de meta.normals (array d’obj ou strings).
+ * Conserve la sélection si elle existe encore.
+ */
+export function updateNormalListForSelectedMesh(meta) {
+  const sel = document.getElementById('normal-list');
+  if (!sel) return;
 
-  normalSelect.innerHTML = '';
-  if (!mesh?.normals?.length) {
-    normalSelect.innerHTML = '<option>-- Aucune normale --</option>';
+  const prev = sel.value;
+  sel.innerHTML = '';
+
+  const normals = meta?.normals || [];
+  if (!normals.length) {
+    sel.innerHTML = '<option>-- Aucune normale --</option>';
+    sel.dispatchEvent(new Event('change'));
     return;
   }
 
-  mesh.normals.forEach(n => {
+  normals.forEach(nrm => {
     const opt = document.createElement('option');
-    opt.value = n.path;
-    opt.textContent = n.name;
-    normalSelect.appendChild(opt);
+    opt.value = typeof nrm === 'string' ? nrm : nrm.path;
+    opt.textContent = labelOf(nrm);
+    sel.appendChild(opt);
   });
 
-  normalSelect.selectedIndex = 0;
-  normalSelect.dispatchEvent(new Event('change'));
+  sel.value = normals.some(nrm =>
+              (typeof nrm === 'string' ? nrm : nrm.path) === prev) ? prev : sel.options[0].value;
+  sel.dispatchEvent(new Event('change'));
 }
+

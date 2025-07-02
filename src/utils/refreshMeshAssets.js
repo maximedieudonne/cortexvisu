@@ -18,14 +18,16 @@ function meshFolderName(name = '') {
 
 /**
  * Rafraîchit les assets (textures, normales) du mesh courant.
+ * Fusionne les nouveaux assets sans écraser les précédents.
  * @param {object} meshMeta - L'objet userData.meta du mesh courant.
  */
 export async function refreshMeshAssets(meshMeta) {
-  if (!meshMeta?.name) return;
+  if (!meshMeta?.path) return;                     // sécurité
 
-  const folder = meshFolderName(meshMeta.name);      // "lh.white"
+  // Le dossier sujet = .../<sub-xxx>
+  // On passe le chemin absolu pour que l’API sache où chercher
   try {
-    const res = await fetch(`/api/mesh-assets/?mesh=${encodeURIComponent(folder)}`);
+    const res = await fetch(`/api/mesh-assets/?mesh=${encodeURIComponent(meshMeta.path)}`);
     if (!res.ok) {
       console.warn('mesh-assets HTTP', res.status);
       return;
@@ -33,18 +35,28 @@ export async function refreshMeshAssets(meshMeta) {
 
     const { textures = [], normals = [] } = await res.json();
 
-    // met à jour le meta puis l'UI
-    meshMeta.textures = textures;
-    meshMeta.normals  = normals;
+    /* ---------- fusionne sans doublon ------------------------------ */
+    meshMeta.textures = Array.from(
+      new Map([...(meshMeta.textures || []), ...textures]
+        .map(t => [t.path || t, t]))                // clé = path
+      .values()
+    );
 
+    meshMeta.normals = Array.from(
+      new Map([...(meshMeta.normals || []), ...normals]
+        .map(n => [n.path || n, n]))                // clé = path
+      .values()
+    );
+
+    /* ---------- met à jour les listes déroulantes ------------------ */
     updateTextureListForSelectedMesh(meshMeta);
     updateNormalListForSelectedMesh(meshMeta);
 
-    // sélectionne automatiquement la dernière normale ajoutée si dispo
-    if (normals.length) {
+    /* ---------- sélectionne la dernière normale -------------------- */
+    if (meshMeta.normals?.length) {
       const normalSelect = document.getElementById('normal-list');
       if (normalSelect) {
-        normalSelect.value = normals[normals.length - 1].path;
+        normalSelect.value = meshMeta.normals.at(-1).path;
         normalSelect.dispatchEvent(new Event('change'));
       }
     }
