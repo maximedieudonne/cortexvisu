@@ -226,11 +226,6 @@ body {
   display: none;
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
 
 .modal-actions button {
   padding: 8px 12px;
@@ -763,13 +758,51 @@ body {
 }
 
 /* ===== MODALE FONCTIONS PACKAGE ===== */
-.modal-content.pkg-flex {
-  width: 900px;               /* + large que la modale 480 px par défaut */
+
+/* carte globale */
+.modal-content.pkg-card {
+  width: 900px;
   max-width: 95vw;
+  background: #222;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;       /* empile corps + footer */
+  gap: 16px;
+}
+
+/* bloc 3 colonnes */
+.pkg-body {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  padding: 32px 0 0 48px;      /* top 32 px, left 48 px */
 }
+
+/* colonnes */
+.pkg-col { flex: 1 1 0; max-height: 70vh; overflow-y: auto; }
+
+/* footer centré */
+.pkg-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;      /* centrage horizontal */
+}
+
+.pkg-footer button {
+  padding: 8px 20px;
+  background: #444;
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background .2s;
+}
+.pkg-footer button:disabled      { opacity: .4; cursor: default; }
+.pkg-footer button:not(:disabled):hover { background: #666; }
+
+
 
 /* colonnes */
 .pkg-col       { flex: 1 1 0; max-height: 70vh; overflow-y: auto; }
@@ -780,7 +813,7 @@ body {
 #pkg-col-fn button {
   display: block;
   width: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 6px;      /* <= important pour lisibilité */
   padding: 6px 10px;
   background: #333;
   color: #fff;
@@ -830,16 +863,46 @@ body {
   font-size: 13px;
 }
 
-
-
-
-.pkg-col button {
-  display: block;
-  width: 100%;
-  padding: 6px 8px;
-  margin-bottom: 4px;
-  background: #333;
-  color: #fff;
-  border: 1px solid #555;
-  text-align: left;
+/* croix de fermeture, fixe en haut-gauche de la carte */
+/* croix : on la laisse en haut-gauche */
+.pkg-card .close-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 26px;
+  height: 26px;
+  line-height: 24px;
+  background: #eee;
+  color: #000;
+  border: 1px solid #666;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  padding: 0;
+  z-index: 10;                 /* passe au-dessus de tout */
 }
+.pkg-card .close-btn:hover { background: #fff; }
+
+/* footer : bouton Run centré */
+.pkg-footer {
+  width: 100%;
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;   /* <-- centrage horizontal */
+}
+
+.pkg-footer button {
+  padding: 8px 20px;
+  background: #444;
+  color: #fff;
+  border: 1px solid #666;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.pkg-footer button:disabled { opacity: .4; cursor: default; }
+.pkg-footer button:not(:disabled):hover { background: #666; }
+

@@ -59,6 +59,7 @@ function createPackageButton(packageName, functions) {
 
 /* ------------------------------------------------------------------------- */
 function showFunctionModal(functions) {
+  console.log('LEN', functions.length, functions);
   const loadedMeshes = (getMeshes() || []).map(m => ({
     path: m.path,
     label: m.name || m.path.split('/').pop()
@@ -68,21 +69,36 @@ function showFunctionModal(functions) {
   const modal = document.createElement('div');
   modal.className = 'modal';
   modal.innerHTML = `
-    <div class="modal-content pkg-flex">
-      <button id="pkg-close" class="close-btn">✖</button>
+  <div class="modal-content pkg-card">
 
-      <aside  id="pkg-col-fn"   class="pkg-col"><h4>Fonctions</h4></aside>
-      <section id="pkg-col-mesh" class="pkg-col"><h4>Maillages</h4>
+    <button id="pkg-close" class="close-btn">✖</button>
+
+    <!-- corps à trois colonnes -->
+    <div class="pkg-body">
+      <aside id="pkg-col-fn"   class="pkg-col">
+        <h4>Fonctions</h4>
+      </aside>
+
+      <section id="pkg-col-mesh" class="pkg-col">
+        <h4>Maillages</h4>
         <button id="pkg-mesh-all">Tout sélectionner</button>
         <ul id="pkg-mesh-list" class="checkbox-list"></ul>
       </section>
-      <section id="pkg-col-arg"  class="pkg-col"><h4>Arguments</h4>
+
+      <section id="pkg-col-arg"  class="pkg-col">
+        <h4>Arguments</h4>
         <form id="pkg-arg-form"></form>
       </section>
     </div>
-    <div class="modal-actions">
+
+    <!-- footer centré -->
+    <div class="pkg-footer">
       <button id="pkg-run" disabled>Run</button>
-    </div>`;
+    </div>
+
+  </div>
+`;
+  
   document.body.appendChild(modal);
 
   /* ----------- état & helpers ------------------------------------------- */
