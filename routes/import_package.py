@@ -13,10 +13,14 @@ from pydantic import BaseModel
 from pathlib import Path
 import importlib
 import re
+from inspect import signature, Parameter
+import yaml
 
 from .config_loader import load_config_yaml  # utilitaire de lecture YAML
 
 router = APIRouter()
+
+
 
 # ---------------------------------------------------------------------------
 # Pydantic models
@@ -36,10 +40,43 @@ imported_functions: Dict[str, Dict[str, Any]] = {}
 current_package: str | None = None
 package_config: Dict[str, Any] = {}            # contenu de config.yaml
 
+
+# ------------------------------------------------------------------
+def _build_config(step_name: str,
+                  base_cfg: Dict[str, Any],
+                  user_over: Dict[str, Any]) -> Dict[str, Any]:
+    """Fusionne YAML + overrides interface pour CE step uniquement."""
+    cfg = base_cfg.copy()
+    cfg.update(user_over)           # UI > YAML
+    # on range tout dans une clé step_xx_…  pour le run()
+    return {step_name: cfg}
+# ------------------------------------------------------------------
+
+# ------------------------------------------------------------------ #
+# Trouver la clé YAML exacte d’un step (step_01_normalvectors, …)
+def _yaml_key_for(func_name: str) -> str | None:
+    fn_norm = _normalize(func_name)
+    for key in package_config:
+        if fn_norm == _normalize(key):
+            return key
+    return None
+# ------------------------------------------------------------------ #
+def _merge_cfg(yaml_key: str,
+               base: Dict[str, Any],
+               user: Dict[str, Any]) -> Dict[str, Any]:
+    """Construit le dict global à écrire et à passer à la fonction."""
+    step_cfg = base.copy()
+    step_cfg.update(user)              # UI > YAML
+    return {yaml_key: step_cfg}        # ex. {'step_01_normalvectors': {...}}
+# ------------------------------------------------------------------ #
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 _re_step_prefix = re.compile(r"^step_\d+_", flags=re.I)
+
+
 
 
 def _normalize(txt: str) -> str:
@@ -101,40 +138,50 @@ def import_package(payload: PackageRequest):
 
 @router.post("/run-function-batch/")
 def run_function_batch(req: RunBatchRequest):
-    """Exécute `req.name` sur chaque mesh listé dans `mesh_paths`."""
+    """
+    Exécute `req.name` sur chaque mesh.
+    Signature imposée :
+        run(subject_input_dir, subject_output_dir, config_dict)
+    """
     if req.name not in imported_functions:
         raise HTTPException(404, f"Fonction '{req.name}' inconnue.")
 
-    func = imported_functions[req.name]["function"]
-    base_kwargs = _match_yaml_for(req.name)       # valeurs par défaut YAML
+    func          = imported_functions[req.name]["function"]
+    yaml_key      = _yaml_key_for(req.name)           # ex. step_01_normalvectors
+    base_cfg_yaml = package_config.get(yaml_key, {})  # bloc YAML d’origine
 
     results = []
-    for mesh_path in req.mesh_paths:
-        mesh_stem = Path(mesh_path).stem
 
-        # output_dir : UI > YAML > /public/<mesh>
-        out_dir = Path(
-            req.args_user.get("output_dir")
-            or base_kwargs.get("output_dir")
-            or Path("public") / mesh_stem
-        )
+    for mesh_path in req.mesh_paths:
+        mesh_path   = Path(mesh_path)                 # …/sub-001/surf/lh.white.gii
+        subject_dir = mesh_path.parent.parent         # …/sub-001
+        out_dir     = Path("public") / subject_dir.name / "cortexanalyzer"
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        # assemblage des kwargs (ordre UI > YAML)
-        kwargs = {**base_kwargs, **req.args_user,
-                  "mesh_path": mesh_path,
-                  "output_dir": str(out_dir)}
+        # ---------- fusion YAML + overrides UI ----------
+        step_cfg   = base_cfg_yaml.copy()
+        step_cfg.update(req.args_user)                # UI > YAML
+        cfg_dict   = {yaml_key: step_cfg}
 
+        # ---------- écrire le fichier pour traçabilité ----------
+        cfg_file = out_dir / "config_generated.yaml"
+        with cfg_file.open("w") as f:
+            yaml.safe_dump(cfg_dict, f)
+
+        # ---------- appel unique (3 arguments obligatoires) ----------
         try:
-            result = func(**kwargs)  # nouvelle signature (kw‑only)
-        except TypeError:
-            # compat: anciennes signatures (mesh_path, output_dir)
-            result = func(mesh_path, str(out_dir))
+            result = func(str(subject_dir),
+                          str(out_dir),
+                          cfg_dict)
+        except Exception as e:
+            raise HTTPException(500, f"Erreur dans {req.name}: {e}")
 
         results.append({
-            "mesh": mesh_stem,
-            "output_dir": str(out_dir),
-            "result": result,
+            "subject": subject_dir.name,
+            "mesh":    mesh_path.name,
+            "config":  str(cfg_file),
+            "output":  str(out_dir),
+            "result":  result,
         })
 
     return {"status": "success", "results": results}
