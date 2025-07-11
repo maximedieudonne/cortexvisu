@@ -8,6 +8,7 @@ Expose deux endpoints :
 maintenant uniquement /run-function-batch/.
 """
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from typing import Dict, Any, List
 from pydantic import BaseModel
 from pathlib import Path
@@ -17,6 +18,14 @@ from inspect import signature, Parameter
 import yaml
 
 from .config_loader import load_config_yaml  # utilitaire de lecture YAML
+
+import uuid
+import time
+from threading import Lock
+
+# Dictionnaire pour stocker la progression des jobs
+progress_registry = {}
+progress_lock = Lock()
 
 router = APIRouter()
 
@@ -141,47 +150,111 @@ def run_function_batch(req: RunBatchRequest):
     """
     Exécute `req.name` sur chaque mesh.
     Signature imposée :
-        run(subject_input_dir, subject_output_dir, config_dict)
+        run(subject_input_dir, subject_output_dir, config_dict, progress_callback=None)
     """
     if req.name not in imported_functions:
         raise HTTPException(404, f"Fonction '{req.name}' inconnue.")
 
-    func          = imported_functions[req.name]["function"]
-    yaml_key      = _yaml_key_for(req.name)           # ex. step_01_normalvectors
-    base_cfg_yaml = package_config.get(yaml_key, {})  # bloc YAML d’origine
+    func = imported_functions[req.name]["function"]
+    yaml_key = _yaml_key_for(req.name)
+    base_cfg_yaml = package_config.get(yaml_key, {})
+
+    job_id = str(uuid.uuid4())
+    start_time = time.time()
+
+    with progress_lock:
+        progress_registry[job_id] = {
+            "progress": 0,
+            "logs": [],
+            "eta": "?",
+            "elapsed": "0 s",
+            "start": start_time,
+            "total": len(req.mesh_paths)
+        }
+
+    def log(msg: str):
+        with progress_lock:
+            progress_registry[job_id]["logs"].append(msg)
 
     results = []
 
-    for mesh_path in req.mesh_paths:
-        mesh_path   = Path(mesh_path)                 # …/sub-001/surf/lh.white.gii
-        subject_dir = mesh_path.parent.parent         # …/sub-001
-        out_dir     = Path("public") / subject_dir.name / "cortexanalyzer"
+    total = len(req.mesh_paths)
+
+    for idx, mesh_path in enumerate(req.mesh_paths, start=1):
+        mesh_path = Path(mesh_path)
+        subject_dir = mesh_path.parent.parent
+        out_dir = Path("public") / subject_dir.name / "cortexanalyzer"
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        # ---------- fusion YAML + overrides UI ----------
-        step_cfg   = base_cfg_yaml.copy()
-        step_cfg.update(req.args_user)                # UI > YAML
-        cfg_dict   = {yaml_key: step_cfg}
+        # Fusion config YAML + overrides UI
+        step_cfg = base_cfg_yaml.copy()
+        step_cfg.update(req.args_user)
+        cfg_dict = {yaml_key: step_cfg}
 
-        # ---------- écrire le fichier pour traçabilité ----------
+        # Sauvegarde temporaire de la config
         cfg_file = out_dir / "config_generated.yaml"
         with cfg_file.open("w") as f:
             yaml.safe_dump(cfg_dict, f)
 
-        # ---------- appel unique (3 arguments obligatoires) ----------
         try:
-            result = func(str(subject_dir),
-                          str(out_dir),
-                          cfg_dict)
+            log(f"[{subject_dir.name}] Début exécution sur {mesh_path.name}")
+
+            # Progression interne (callback)
+            def progress_callback(p: float, msg: str = ""):
+                done_frac = (idx - 1 + p) / total
+                elapsed = time.time() - start_time
+                eta = (elapsed / done_frac) * (1 - done_frac) if done_frac > 0 else 0
+
+                with progress_lock:
+                    progress_registry[job_id]["progress"] = int(done_frac * 100)
+                    progress_registry[job_id]["eta"] = f"{int(eta)} s"
+                    progress_registry[job_id]["elapsed"] = f"{int(elapsed)} s"
+                    if msg:
+                        progress_registry[job_id]["logs"].append(msg)
+
+            # Appel de la fonction principale
+            result = func(
+                str(subject_dir),
+                str(out_dir),
+                cfg_dict,
+                progress_callback=progress_callback
+            )
+
+            log(f"[{subject_dir.name}] Terminé")
+
         except Exception as e:
+            log(f"[{subject_dir.name}] Erreur: {str(e)}")
             raise HTTPException(500, f"Erreur dans {req.name}: {e}")
 
         results.append({
             "subject": subject_dir.name,
-            "mesh":    mesh_path.name,
-            "config":  str(cfg_file),
-            "output":  str(out_dir),
-            "result":  result,
+            "mesh": mesh_path.name,
+            "config": str(cfg_file),
+            "output": str(out_dir),
+            "result": result,
         })
 
-    return {"status": "success", "results": results}
+    # Finalisation à 100%
+    with progress_lock:
+        progress_registry[job_id]["progress"] = 100
+        progress_registry[job_id]["eta"] = "0 s"
+        progress_registry[job_id]["elapsed"] = f"{int(time.time() - start_time)} s"
+
+    return JSONResponse(content={
+        "status": "success",
+        "results": results,
+        "job_id": job_id
+    })
+
+
+@router.get("/progress/{job_id}")
+def get_progress(job_id: str):
+    with progress_lock:
+        if job_id not in progress_registry:
+            raise HTTPException(404, "Job ID inconnu")
+        return {
+            "progress": progress_registry[job_id]["progress"],
+            "eta": progress_registry[job_id]["eta"],
+            "elapsed": progress_registry[job_id]["elapsed"],
+            "logs": progress_registry[job_id]["logs"][-50:]  # ou tout si nécessaire # derniers logs
+        }

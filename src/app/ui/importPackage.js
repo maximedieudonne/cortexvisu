@@ -96,6 +96,13 @@ function showFunctionModal(functions) {
       <button id="pkg-run" disabled>Run</button>
     </div>
 
+    <div id="pkg-progress-section" class="hidden">
+      <div class="progress-wrapper">
+        <progress id="pkg-progress-bar" value="0" max="100"></progress>
+        <div id="pkg-progress-text">Initialisation…</div>
+      </div>
+      <div id="pkg-log-output" class="log-box"></div>
+    </div>
   </div>
 `;
   
@@ -179,50 +186,75 @@ function showFunctionModal(functions) {
 
   /* ----------- Bouton RUN ---------------------------------------------- */
   runBtn.onclick = async () => {
-    const overlay = document.getElementById('loading-overlay');
-    overlay.classList.remove('hidden');
+  const progressSection = modal.querySelector('#pkg-progress-section');
+  const progressBar = modal.querySelector('#pkg-progress-bar');
+  const progressText = modal.querySelector('#pkg-progress-text');
+  const logBox = modal.querySelector('#pkg-log-output');
+  logBox.style.whiteSpace = 'pre-line';
 
-    const argsUser = {};
-    argForm.querySelectorAll('input[data-arg]').forEach(inp => {
-      argsUser[inp.name] = inp.value;
+  progressSection.classList.remove('hidden');
+  progressBar.value = 0;
+  progressText.textContent = 'Initialisation…';
+  logBox.textContent = '';
+
+  const argsUser = {};
+  argForm.querySelectorAll('input[data-arg]').forEach(inp => {
+    argsUser[inp.name] = inp.value;
+  });
+
+  const outDirVal = argForm.querySelector('input[name="output_dir"]').value;
+  if (outDirVal) argsUser.output_dir = outDirVal;
+  try {
+    const res = await fetch('/api/run-function-batch/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: currentFn,
+        mesh_paths: [...checkedMeshes],
+        args_user: argsUser
+      })
     });
-    // récupérer output_dir si rempli
-    const outDirVal = argForm.querySelector('input[name="output_dir"]').value;
-    if (outDirVal) argsUser.output_dir = outDirVal;
 
-    try {
-      const res = await fetch('/api/run-function-batch/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: currentFn,
-          mesh_paths: [...checkedMeshes],
-          args_user: argsUser
-        })
-      });
+    if (!res.ok) throw new Error(await res.text());
 
-      if (!res.ok) throw new Error(await res.text());
+    const { results, job_id } = await res.json();
+    console.table(results);
+    const startTime = Date.now();
+    
+    const poll = setInterval(async () => {
+      try {
+        const progressRes = await fetch(`/api/progress/${job_id}`);
+        if (!progressRes.ok) throw new Error('Erreur progression');
 
-      const { results } = await res.json();
-      console.table(results);
+        const { progress, eta, elapsed, logs } = await progressRes.json();
 
-      // rafraîchir assets pour chaque mesh traité
-      for (const r of results) {
-        await refreshMeshAssets({ path: r.out });
+        progressBar.value = progress;
+        progressText.textContent = `Progression : ${progress}% • Estimé : ${eta} • Écoulé : ${elapsed}`;
+        logBox.textContent = logs.join('\n');
+        logBox.scrollTop = logBox.scrollHeight;
+
+        if (progress >= 100) {
+          clearInterval(poll);
+
+          for (const r of results) {
+            await refreshMeshAssets({ path: r.output });
+          }
+
+          const totalElapsed = Math.floor((Date.now() - startTime) / 1000);
+          progressText.textContent = `Terminé  (${progress}%) • Durée totale : ${totalElapsed}s`;
+        }
+
+      } catch (e) {
+        console.error('Erreur polling :', e);
+        clearInterval(poll);
+        progressText.textContent = 'Erreur durant le traitement';
       }
+    }, 1500);
 
-      alert('Traitement terminé !');
-      modal.remove();
-
-    } catch (err) {
-      alert('Erreur : ' + err.message);
-
-    } finally {
-      overlay.classList.add('hidden');
-    }
-  };
-
-  /* ----------- Fermer --------------------------------------------------- */
-  modal.querySelector('#pkg-close').onclick = () => modal.remove();
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+    progressText.textContent = 'Erreur lors de l’envoi de la tâche.';
+  }
+};
 }
 
