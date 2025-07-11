@@ -185,18 +185,21 @@ function showFunctionModal(functions) {
   };
 
   /* ----------- Bouton RUN ---------------------------------------------- */
-  runBtn.onclick = async () => {
+ /* ----------- Bouton RUN ---------------------------------------------- */
+runBtn.onclick = async () => {
   const progressSection = modal.querySelector('#pkg-progress-section');
   const progressBar = modal.querySelector('#pkg-progress-bar');
   const progressText = modal.querySelector('#pkg-progress-text');
   const logBox = modal.querySelector('#pkg-log-output');
   logBox.style.whiteSpace = 'pre-line';
 
+  runBtn.disabled = true;
   progressSection.classList.remove('hidden');
   progressBar.value = 0;
   progressText.textContent = 'Initialisation…';
   logBox.textContent = '';
 
+  // Collecte des arguments
   const argsUser = {};
   argForm.querySelectorAll('input[data-arg]').forEach(inp => {
     argsUser[inp.name] = inp.value;
@@ -204,7 +207,12 @@ function showFunctionModal(functions) {
 
   const outDirVal = argForm.querySelector('input[name="output_dir"]').value;
   if (outDirVal) argsUser.output_dir = outDirVal;
+
+  let job_id = null;
+  let results = [];
+
   try {
+    // Envoi de la requête
     const res = await fetch('/api/run-function-batch/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -217,10 +225,10 @@ function showFunctionModal(functions) {
 
     if (!res.ok) throw new Error(await res.text());
 
-    const { results, job_id } = await res.json();
-    console.table(results);
-    const startTime = Date.now();
-    
+    const data = await res.json();
+    job_id = data.job_id;
+
+    // Polling de la progression
     const poll = setInterval(async () => {
       try {
         const progressRes = await fetch(`/api/progress/${job_id}`);
@@ -228,6 +236,7 @@ function showFunctionModal(functions) {
 
         const { progress, eta, elapsed, logs } = await progressRes.json();
 
+        // MAJ interface
         progressBar.value = progress;
         progressText.textContent = `Progression : ${progress}% • Estimé : ${eta} • Écoulé : ${elapsed}`;
         logBox.textContent = logs.join('\n');
@@ -236,25 +245,30 @@ function showFunctionModal(functions) {
         if (progress >= 100) {
           clearInterval(poll);
 
+          // Re-fetch des résultats finaux
+          const finalRes = await fetch(`/api/progress/${job_id}`);
+          const finalData = await finalRes.json();
+          results = finalData.results || [];
+
           for (const r of results) {
             await refreshMeshAssets({ path: r.output });
           }
 
-          const totalElapsed = Math.floor((Date.now() - startTime) / 1000);
-          progressText.textContent = `Terminé  (${progress}%) • Durée totale : ${totalElapsed}s`;
+          progressText.textContent = `Terminé (${progress}%) • Durée totale : ${elapsed}`;
+          runBtn.disabled = false;
         }
 
       } catch (e) {
-        console.error('Erreur polling :', e);
         clearInterval(poll);
         progressText.textContent = 'Erreur durant le traitement';
+        console.error('Erreur polling :', e);
+        runBtn.disabled = false;
       }
-    }, 1500);
-
+    }, 500);
   } catch (err) {
-    alert('Erreur : ' + err.message);
     progressText.textContent = 'Erreur lors de l’envoi de la tâche.';
+    alert('Erreur : ' + err.message);
+    runBtn.disabled = false;
   }
 };
 }
-

@@ -16,6 +16,7 @@ import importlib
 import re
 from inspect import signature, Parameter
 import yaml
+from fastapi import BackgroundTasks
 
 from .config_loader import load_config_yaml  # utilitaire de lecture YAML
 
@@ -146,11 +147,10 @@ def import_package(payload: PackageRequest):
 
 
 @router.post("/run-function-batch/")
-def run_function_batch(req: RunBatchRequest):
+def run_function_batch(req: RunBatchRequest, background_tasks: BackgroundTasks):
     """
-    Exécute `req.name` sur chaque mesh.
-    Signature imposée :
-        run(subject_input_dir, subject_output_dir, config_dict, progress_callback=None)
+    Lance le traitement en tâche de fond et retourne immédiatement un job_id.
+    Le polling côté client peut commencer sans attendre la fin du traitement.
     """
     if req.name not in imported_functions:
         raise HTTPException(404, f"Fonction '{req.name}' inconnue.")
@@ -162,6 +162,7 @@ def run_function_batch(req: RunBatchRequest):
     job_id = str(uuid.uuid4())
     start_time = time.time()
 
+    # Préparer la structure de suivi
     with progress_lock:
         progress_registry[job_id] = {
             "progress": 0,
@@ -172,77 +173,74 @@ def run_function_batch(req: RunBatchRequest):
             "total": len(req.mesh_paths)
         }
 
-    def log(msg: str):
+    # Le vrai traitement à exécuter plus tard
+    def do_work():
+        total = len(req.mesh_paths)
+        results = []
+
+        def log(msg: str):
+            with progress_lock:
+                progress_registry[job_id]["logs"].append(msg)
+
+        for idx, mesh_path in enumerate(req.mesh_paths, start=1):
+            mesh_path = Path(mesh_path)
+            subject_dir = mesh_path.parent.parent
+            out_dir = Path("public") / subject_dir.name / "cortexanalyzer"
+            out_dir.mkdir(parents=True, exist_ok=True)
+
+            step_cfg = base_cfg_yaml.copy()
+            step_cfg.update(req.args_user)
+            cfg_dict = {yaml_key: step_cfg}
+
+            cfg_file = out_dir / "config_generated.yaml"
+            with cfg_file.open("w") as f:
+                yaml.safe_dump(cfg_dict, f)
+
+            try:
+                log(f"[{subject_dir.name}] Début exécution sur {mesh_path.name}")
+
+                def progress_callback(p: float, msg: str = ""):
+                    done_frac = (idx - 1 + p) / total
+                    elapsed = time.time() - start_time
+                    eta = (elapsed / done_frac) * (1 - done_frac) if done_frac > 0 else 0
+                    with progress_lock:
+                        progress_registry[job_id]["progress"] = int(done_frac * 100)
+                        progress_registry[job_id]["eta"] = f"{int(eta)} s"
+                        progress_registry[job_id]["elapsed"] = f"{int(elapsed)} s"
+                        if msg:
+                            progress_registry[job_id]["logs"].append(msg)
+
+                result = func(
+                    str(subject_dir),
+                    str(out_dir),
+                    cfg_dict,
+                    progress_callback=progress_callback
+                )
+
+                log(f"[{subject_dir.name}] Terminé")
+
+            except Exception as e:
+                log(f"[{subject_dir.name}] Erreur: {str(e)}")
+
+            results.append({
+                "subject": subject_dir.name,
+                "mesh": mesh_path.name,
+                "config": str(cfg_file),
+                "output": str(out_dir),
+                "result": result,
+            })
+
+        # Marquer comme terminé
         with progress_lock:
-            progress_registry[job_id]["logs"].append(msg)
+            progress_registry[job_id]["progress"] = 100
+            progress_registry[job_id]["eta"] = "0 s"
+            progress_registry[job_id]["elapsed"] = f"{int(time.time() - start_time)} s"
 
-    results = []
-
-    total = len(req.mesh_paths)
-
-    for idx, mesh_path in enumerate(req.mesh_paths, start=1):
-        mesh_path = Path(mesh_path)
-        subject_dir = mesh_path.parent.parent
-        out_dir = Path("public") / subject_dir.name / "cortexanalyzer"
-        out_dir.mkdir(parents=True, exist_ok=True)
-
-        # Fusion config YAML + overrides UI
-        step_cfg = base_cfg_yaml.copy()
-        step_cfg.update(req.args_user)
-        cfg_dict = {yaml_key: step_cfg}
-
-        # Sauvegarde temporaire de la config
-        cfg_file = out_dir / "config_generated.yaml"
-        with cfg_file.open("w") as f:
-            yaml.safe_dump(cfg_dict, f)
-
-        try:
-            log(f"[{subject_dir.name}] Début exécution sur {mesh_path.name}")
-
-            # Progression interne (callback)
-            def progress_callback(p: float, msg: str = ""):
-                done_frac = (idx - 1 + p) / total
-                elapsed = time.time() - start_time
-                eta = (elapsed / done_frac) * (1 - done_frac) if done_frac > 0 else 0
-
-                with progress_lock:
-                    progress_registry[job_id]["progress"] = int(done_frac * 100)
-                    progress_registry[job_id]["eta"] = f"{int(eta)} s"
-                    progress_registry[job_id]["elapsed"] = f"{int(elapsed)} s"
-                    if msg:
-                        progress_registry[job_id]["logs"].append(msg)
-
-            # Appel de la fonction principale
-            result = func(
-                str(subject_dir),
-                str(out_dir),
-                cfg_dict,
-                progress_callback=progress_callback
-            )
-
-            log(f"[{subject_dir.name}] Terminé")
-
-        except Exception as e:
-            log(f"[{subject_dir.name}] Erreur: {str(e)}")
-            raise HTTPException(500, f"Erreur dans {req.name}: {e}")
-
-        results.append({
-            "subject": subject_dir.name,
-            "mesh": mesh_path.name,
-            "config": str(cfg_file),
-            "output": str(out_dir),
-            "result": result,
-        })
-
-    # Finalisation à 100%
-    with progress_lock:
-        progress_registry[job_id]["progress"] = 100
-        progress_registry[job_id]["eta"] = "0 s"
-        progress_registry[job_id]["elapsed"] = f"{int(time.time() - start_time)} s"
+    # Ajouter la tâche au background
+    background_tasks.add_task(do_work)
 
     return JSONResponse(content={
-        "status": "success",
-        "results": results,
+        "status": "started",
         "job_id": job_id
     })
 
