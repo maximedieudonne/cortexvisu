@@ -1,5 +1,5 @@
 # launch_app.py
-
+import os
 import subprocess
 import webbrowser
 import time
@@ -43,7 +43,8 @@ def main():
 
     server_process = start_backend()
     time.sleep(2)
-    open_browser()
+    if os.environ["IN_DOCKER"].lower() != "true":
+        open_browser()
 
     try:
         print(" CortexVisu en cours. Appuie sur Ctrl+C pour quitter.")
