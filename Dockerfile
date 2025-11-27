@@ -10,7 +10,7 @@ ADD . .
 RUN npm install && npm run build
 
 # Prod container to run python app
-FROM python:3.11-slim
+FROM python:3.11-alpine
 
 # Define simple variable to skip opening browser in container
 ENV IN_DOCKER=true
