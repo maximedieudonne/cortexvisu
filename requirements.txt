@@ -3,3 +3,5 @@ uvicorn
 nibabel
 matplotlib
 python-multipart
+pyyaml
+scipy
