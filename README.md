@@ -35,6 +35,7 @@ docker run -d --name cortexvisu -p 8000:8000 -v [YOUR LOCAL DATA FOLDER PATH]:/d
 ```
 [YOUR LOCAL DATA FOLDER PATH] est votre dossier ou se trouve votre base de données à visualiser (meshes + textures).
 
+Pour les utilisateurs windows : le path doit etre en linux vu depuis wsl. Par exemple `/mnt/c/data` et non `C:\data`
 
 Puis allez dans votre navigateur web à l'adresse `localhost:8000`
 
