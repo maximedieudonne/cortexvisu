@@ -43,7 +43,7 @@ def main():
 
     server_process = start_backend()
     time.sleep(2)
-    if os.environ["IN_DOCKER"].lower() != "true":
+    if os.getenv("IN_DOCKER", "false").lower() != "true":
         open_browser()
 
     try:
